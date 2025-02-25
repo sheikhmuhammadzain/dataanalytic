@@ -17,6 +17,25 @@ export default defineConfig(({ mode }) => {
       host: true, // Listen on all interfaces to avoid ENOBUFS
       cors: true, // Enable CORS by default
     },
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      sourcemap: false,
+      // Ensure proper file output formats and types
+      rollupOptions: {
+        output: {
+          // Ensure proper chunking
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            charts: ['recharts', 'react-plotly.js', 'plotly.js-dist-min'],
+          },
+          // Ensure proper MIME types for JS files
+          entryFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]'
+        }
+      }
+    },
     define: {
       'process.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY),
     },
