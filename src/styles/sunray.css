@@ -1,0 +1,16 @@
+.sunray-beam {
+  position: absolute;
+  top: 0;
+  left: -20%;
+  width: 60%;
+  height: 100%;
+  background: radial-gradient(ellipse at left, rgba(99, 102, 241, 0.2), transparent 70%);
+  z-index: -1;
+}
+
+@media (max-width: 768px) {
+  .sunray-beam {
+    width: 80%;
+    opacity: 0.1;
+  }
+}
