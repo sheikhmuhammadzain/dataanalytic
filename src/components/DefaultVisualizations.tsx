@@ -135,21 +135,56 @@ const detectTimeColumn = (headers: string[], rows: any[]) => {
 };
 
 const prepareOptimizedCategoryData = (categoriesArray, countsArray, limit = 15) => {
-  if (categoriesArray.length <= limit) {
-    return { categories: categoriesArray, counts: countsArray };
+  try {
+    // Safety check for empty arrays
+    if (!categoriesArray || !countsArray || categoriesArray.length === 0 || countsArray.length === 0) {
+      console.log("Warning: Empty arrays passed to prepareOptimizedCategoryData");
+      return { categories: ["No Data"], counts: [1] };
+    }
+    
+    // Make a copy of the arrays to prevent mutating original data
+    const categories = [...categoriesArray];
+    const counts = [...countsArray];
+    
+    // Special case: if there's only "Unknown" or "Error" in categories
+    if (categories.length === 1 && (categories[0] === "Unknown" || categories[0] === "Error" || categories[0] === "No Data")) {
+      return { categories, counts };
+    }
+    
+    // If we have fewer categories than the limit, return the original data
+    if (categories.length <= limit) {
+      return { categories, counts };
+    }
+    
+    // Sort data by counts in descending order (if not already sorted)
+    const combined = categories.map((cat, i) => ({ category: cat, count: counts[i] }));
+    combined.sort((a, b) => b.count - a.count);
+    
+    // Take top categories up to the limit - 1 (leaving room for "Other")
+    const topItems = combined.slice(0, limit - 1);
+    const otherItems = combined.slice(limit - 1);
+    
+    // Calculate the sum of the "Other" category
+    const otherSum = otherItems.reduce((sum, item) => sum + item.count, 0);
+    
+    // Prepare the final arrays
+    const resultCategories = topItems.map(item => item.category);
+    const resultCounts = topItems.map(item => item.count);
+    
+    // Only add "Other" if there's actually data to aggregate
+    if (otherSum > 0) {
+      resultCategories.push("Other");
+      resultCounts.push(otherSum);
+    }
+    
+    return {
+      categories: resultCategories,
+      counts: resultCounts
+    };
+  } catch (error) {
+    console.error("Error in prepareOptimizedCategoryData:", error);
+    return { categories: ["Error"], counts: [1] };
   }
-  
-  // Take top categories up to the limit
-  const topCategories = categoriesArray.slice(0, limit - 1);
-  const topCounts = countsArray.slice(0, limit - 1);
-  
-  // Aggregate the rest into "Other"
-  const otherSum = countsArray.slice(limit - 1).reduce((sum, count) => sum + count, 0);
-  
-  return {
-    categories: [...topCategories, "Other"],
-    counts: [...topCounts, otherSum]
-  };
 };
 
 interface DefaultVisualizationsProps {
@@ -320,64 +355,92 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
   }), []);
 
   const categoryData = useMemo(() => {
-    if (!processedData?.rows || !selectedCategorical) return null;
+    if (!processedData?.rows || !selectedCategorical) {
+      console.log("No processed data or categorical column selected");
+      return null;
+    }
     
     console.log("Generating categoryData for", selectedCategorical);
     
-    // Create a more efficient aggregation process
-    const counts: Record<string, number> = {};
-    const maxCategoriesToProcess = 100; // Limit for very large datasets
-    let totalProcessed = 0;
-    
-    // Process in batches for very large datasets
-    const batchSize = 10000;
-    const totalRows = processedData.rows.length;
-    
-    for (let i = 0; i < totalRows; i += batchSize) {
-      const batch = processedData.rows.slice(i, Math.min(i + batchSize, totalRows));
+    try {
+      // Create a more efficient aggregation process
+      const counts: Record<string, number> = {};
+      const maxCategoriesToProcess = 100; // Limit for very large datasets
+      let totalProcessed = 0;
       
-      batch.forEach(row => {
-        const value = row[selectedCategorical];
-        const key = value != null ? String(value).trim() : "Unknown";
-        if (key !== "") {
-          counts[key] = (counts[key] || 0) + 1;
-        }
-      });
+      // Process in batches for very large datasets
+      const batchSize = 10000;
+      const totalRows = processedData.rows.length;
       
-      totalProcessed += batch.length;
-      console.log(`Processed ${totalProcessed} of ${totalRows} rows`);
+      // Safely process rows
+      for (let i = 0; i < totalRows; i += batchSize) {
+        const batch = processedData.rows.slice(i, Math.min(i + batchSize, totalRows));
+        
+        batch.forEach(row => {
+          if (row && row[selectedCategorical] !== undefined) {
+            const value = row[selectedCategorical];
+            // Handle null, undefined, and empty strings
+            const key = value != null && String(value).trim() !== "" 
+              ? String(value).trim() 
+              : "Unknown";
+            
+            counts[key] = (counts[key] || 0) + 1;
+          }
+        });
+        
+        totalProcessed += batch.length;
+        console.log(`Processed ${totalProcessed} of ${totalRows} rows`);
+      }
+      
+      // Ensure we have some data
+      if (Object.keys(counts).length === 0) {
+        console.log("No categories found in the data");
+        return {
+          categories: ["No Data"],
+          counts: [0],
+          percentages: [100],
+          rawData: [["No Data", 0]],
+          totalCount: 0
+        };
+      }
+      
+      // Sort and limit categories for visualization
+      const sortedData = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, maxCategoriesToProcess);
+      
+      // Prepare data structure for visualization
+      const categories = sortedData.map(([cat]) => cat);
+      const categoryCounts = sortedData.map(([, count]) => count);
+      
+      // Calculate the total count of all categories
+      const totalCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      
+      // Calculate percentages for each category
+      const percentages = categoryCounts.map(count => 
+        totalCount > 0 ? (count / totalCount) * 100 : 0
+      );
+      
+      console.log("Generated categories:", categories.length);
+      
+      return {
+        categories,
+        counts: categoryCounts,
+        percentages,
+        rawData: sortedData,
+        totalCount
+      };
+    } catch (error) {
+      console.error("Error generating category data:", error);
+      // Return safe fallback
+      return {
+        categories: ["Error"],
+        counts: [0],
+        percentages: [100],
+        rawData: [["Error", 0]],
+        totalCount: 0
+      };
     }
-    
-    // Sort and limit categories for visualization
-    const sortedData = Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, maxCategoriesToProcess);
-    
-    // Prepare data structure for visualization
-    const categories = sortedData.map(([cat]) => cat);
-    const categoryCounts = sortedData.map(([, count]) => count);
-    
-    // Calculate the total count of all categories
-    const totalCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
-    
-    // Calculate percentages for each category
-    const percentages = categoryCounts.map(count => (count / totalCount) * 100);
-    
-    if (categories.length === 0) {
-      categories.push("No Data");
-      categoryCounts.push(0);
-      percentages.push(100);
-    }
-    
-    console.log("Generated categories:", categories.length);
-    
-    return {
-      categories,
-      counts: categoryCounts,
-      percentages,
-      rawData: sortedData,
-      totalCount
-    };
   }, [processedData, selectedCategorical]);
 
   useEffect(() => {
@@ -420,6 +483,22 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       return () => clearTimeout(timer);
     }
   }, [isLoading.category, isLoading.proportion]);
+
+  // Add this effect after the other chart data effects to handle edge cases for the pie chart
+  useEffect(() => {
+    // Special handling for proportional analysis issues
+    const timer = setTimeout(() => {
+      if (isLoading.proportion && categoryData) {
+        console.log("Forcing proportion chart loading state to false due to timeout");
+        setIsLoading(prev => ({
+          ...prev,
+          proportion: false
+        }));
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [isLoading.proportion, categoryData]);
 
   const chartData = useMemo(() => {
     if (!processedData?.rows?.length) return null;
@@ -788,49 +867,78 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
                 isExplaining={explaining['proportion']}
                 isLoading={isLoading['proportion']}
               >
-                {!categoryData ? (
+                {!categoryData || categoryData.categories.length === 0 ? (
                   <div className="h-[300px] flex items-center justify-center text-white/50">
                     No categorical data available
+                  </div>
+                ) : categoryData.categories.length === 1 && categoryData.categories[0] === "No Data" ? (
+                  <div className="h-[300px] flex items-center justify-center text-white/50">
+                    No valid categories found in this column
                   </div>
                 ) : (
                   <Plot
                     data={[{
-                      type: 'sunburst',
+                      type: 'pie',
                       labels: (() => {
-                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
-                        return [...optimized.categories, 'Total'];
-                      })(),
-                      parents: (() => {
-                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
-                        return [...Array(optimized.categories.length).fill('Total'), ''];
+                        try {
+                          if (!categoryData) return ["No Data"];
+                          const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts, 6); // Reduced to 6 for better visualization
+                          return optimized.categories;
+                        } catch (error) {
+                          console.error("Error preparing pie chart labels:", error);
+                          return ["Error loading data"];
+                        }
                       })(),
                       values: (() => {
-                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
-                        return [...optimized.counts, 0];
+                        try {
+                          if (!categoryData) return [1];
+                          const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts, 6);
+                          return optimized.counts;
+                        } catch (error) {
+                          console.error("Error preparing pie chart values:", error);
+                          return [1];
+                        }
                       })(),
-                      branchvalues: 'total',
+                      textinfo: 'label+percent',
+                      insidetextorientation: 'horizontal',
+                      textposition: 'inside',
+                      automargin: true,
                       marker: {
                         colors: (() => {
-                          const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
-                          return [...optimized.categories.map((_, i) => COLORS[i % COLORS.length]), 'rgba(0,0,0,0)'];
+                          try {
+                            if (!categoryData) return [COLORS[0]];
+                            const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts, 6);
+                            return optimized.categories.map((_, i) => COLORS[i % COLORS.length]);
+                          } catch (error) {
+                            console.error("Error preparing pie chart colors:", error);
+                            return [COLORS[0]];
+                          }
                         })(),
                         line: { width: 1, color: 'rgba(255,255,255,0.2)' }
                       },
-                      textinfo: 'label+percent',
-                      hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percentEntry:.1f}%<extra></extra>',
-                      insidetextorientation: 'radial',
                       hoverlabel: {
                         bgcolor: '#262626',
                         bordercolor: '#404040',
                         font: { color: 'white' }
-                      }
+                      },
+                      hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>',
+                      hole: 0.3,
+                      pull: [0.03, 0.03, 0.03, 0.03, 0.03, 0.03], // slight pull on all slices
                     }]}
                     layout={{ 
                       ...defaultLayout,
-                      margin: { t: 30, r: 0, b: 0, l: 0 }
+                      margin: { t: 30, r: 20, b: 20, l: 20 },
+                      showlegend: true,
+                      legend: {
+                        orientation: 'h',
+                        yanchor: 'bottom',
+                        y: -0.3,
+                        xanchor: 'center',
+                        x: 0.5
+                      }
                     }}
                     config={defaultConfig}
-                    style={{ width: '100%', height: '100%' }}
+                    style={{ width: '100%', height: '300px' }}
                     useResizeHandler
                   />
                 )}
