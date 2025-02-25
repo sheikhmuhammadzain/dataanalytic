@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { useDataStore } from '../store/dataStore';
 import { mean, median, deviation, extent, quantile, bin } from 'd3-array';
@@ -11,10 +11,13 @@ import {
   BoxPlot,
   ArrowUpDown,
   HelpCircle,
-  Loader2
+  Loader2,
+  Search,
+  Download
 } from 'lucide-react';
 import { getChatCompletion } from '../services/gemini';
 import { AIExplanationModal } from './AIExplanationModal';
+import { saveAs } from "file-saver";
 
 const COLORS = [
   '#6366f1', // indigo-500
@@ -132,6 +135,7 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
   const [explaining, setExplaining] = useState<Record<string, boolean>>({});
   const [modalOpen, setModalOpen] = useState(false);
   const [explanation, setExplanation] = useState('');
+  const [filterValue, setFilterValue] = useState<string>('');
 
   useEffect(() => {
     if (processedData?.summary?.numericalColumns.length) {
@@ -227,6 +231,38 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
     height: 300,
   }), []);
 
+  const categoryData = useMemo(() => {
+    if (!processedData?.rows || !selectedCategorical) return null;
+    
+    const counts: Record<string, number> = {};
+    processedData.rows.forEach(row => {
+      const value = row[selectedCategorical];
+      const key = value != null ? String(value).trim() : "Unknown";
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    
+    const sortedData = Object.entries(counts)
+      .filter(([key]) => key !== "")
+      .sort((a, b) => b[1] - a[1]);
+    
+    const topCategories = sortedData.slice(0, 10);
+    const otherSum = sortedData.slice(10).reduce((sum, [, count]) => sum + count, 0);
+    
+    const categories = topCategories.map(([cat]) => cat);
+    const categoryCounts = topCategories.map(([, count]) => count);
+    
+    if (otherSum > 0) {
+      categories.push("Other");
+      categoryCounts.push(otherSum);
+    }
+    
+    return {
+      categories,
+      counts: categoryCounts,
+      rawData: sortedData
+    };
+  }, [processedData, selectedCategorical]);
+
   const chartData = useMemo(() => {
     if (!processedData?.rows?.length) return null;
 
@@ -238,7 +274,6 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       .map(row => Number(row[primaryColumn]))
       .filter(v => !isNaN(v));
 
-    // Calculate basic statistics
     const stats = {
       mean: mean(values) || 0,
       median: median(values) || 0,
@@ -247,7 +282,6 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       stdDev: deviation(values) || 0,
     };
 
-    // Create histogram bins
     const binGenerator = bin().domain(extent(values) as [number, number]).thresholds(20);
     const bins = binGenerator(values);
     const histogramData = bins.map(bin => ({
@@ -255,7 +289,6 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       y: bin.length,
     }));
 
-    // Improved time series detection and processing
     const timeColumn = detectTimeColumn(processedData.headers, processedData.rows);
     const timeSeriesData = timeColumn ? 
       downsampleTimeSeries(
@@ -268,19 +301,6 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
           .sort((a, b) => a.x.getTime() - b.x.getTime())
       ) : null;
 
-    // Improved category data processing
-    const categoryData = useMemo(() => {
-      if (!processedData?.rows || !selectedCategorical) return null;
-      const counts: Record<string, number> = {};
-      processedData.rows.forEach(row => {
-        const value = row[selectedCategorical];
-        const key = value != null ? String(value) : "Unknown";
-        counts[key] = (counts[key] || 0) + 1;
-      });
-      return { categories: Object.keys(counts), counts: Object.values(counts) };
-    }, [processedData, selectedCategorical]);
-
-    // Correlation data
     const correlationData = numericColumns.length > 1 ? {
       x: processedData.rows.map(row => Number(row[numericColumns[0]])),
       y: processedData.rows.map(row => Number(row[numericColumns[1]])),
@@ -295,45 +315,126 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       categoryData,
       correlationData,
     };
-  }, [processedData, selectedCategorical]);
+  }, [processedData, categoryData]);
+
+  const filteredData = useMemo(() => {
+    if (!processedData?.rows) return [];
+    
+    if (!filterValue.trim()) return processedData.rows;
+    
+    const searchTerms = filterValue.toLowerCase().split(' ').filter(Boolean);
+    return processedData.rows.filter(row => 
+      searchTerms.every(term => 
+        Object.entries(row).some(([key, value]) => 
+          value !== null && String(value).toLowerCase().includes(term)
+        )
+      )
+    );
+  }, [processedData?.rows, filterValue]);
+
+  const handleDownloadCSV = useCallback(() => {
+    if (!processedData?.headers || !filteredData.length) return;
+    
+    const headers = processedData.headers.join(',');
+    
+    const rows = filteredData.map(row => {
+      return processedData.headers.map(header => {
+        const value = row[header];
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string' && value.includes(',')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(',');
+    }).join('\n');
+    
+    const csvContent = `${headers}\n${rows}`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    saveAs(blob, `data-export-${new Date().toISOString().split('T')[0]}.csv`);
+  }, [processedData?.headers, filteredData]);
 
   if (!chartData) return null;
 
   return (
     <div className="space-y-6">
       {showFilters && (
-        <div className="flex flex-wrap gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white/90">Chart Type</label>
-            <select
-              value={selectedChart}
-              onChange={(e) => setSelectedChart(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
-            >
-              <option value="distribution">Distribution Analysis</option>
-              <option value="timeSeries">Time Series</option>
-              <option value="correlation">Correlation Analysis</option>
-              <option value="categorical">Categorical Analysis</option>
-            </select>
-          </div>
+        <>
+          <div className="flex flex-wrap gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/90">Chart Type</label>
+              <select
+                value={selectedChart}
+                onChange={(e) => setSelectedChart(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
+              >
+                <option value="distribution">Distribution Analysis</option>
+                <option value="timeSeries">Time Series</option>
+                <option value="correlation">Correlation Analysis</option>
+                <option value="categorical">Categorical Analysis</option>
+              </select>
+            </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white/90">Column</label>
-            <select
-              value={selectedColumn}
-              onChange={(e) => setSelectedColumn(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
-            >
-              {processedData.summary.numericalColumns.map(col => (
-                <option key={col} value={col}>{col}</option>
-              ))}
-            </select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/90">Column</label>
+              <select
+                value={selectedColumn}
+                onChange={(e) => setSelectedColumn(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
+              >
+                {processedData.summary.numericalColumns.map(col => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </select>
+            </div>
+            
+            {processedData.summary.categoricalColumns && processedData.summary.categoricalColumns.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white/90">Category Column</label>
+                <select
+                  value={selectedCategorical}
+                  onChange={(e) => setSelectedCategorical(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
+                >
+                  {processedData.summary.categoricalColumns.map(col => (
+                    <option key={col} value={col}>{col}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-        </div>
+          
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="flex-grow space-y-2">
+              <label className="text-sm font-medium text-white/90">Filter Data</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+                <input
+                  type="text"
+                  value={filterValue}
+                  onChange={(e) => setFilterValue(e.target.value)}
+                  placeholder="Search in data..."
+                  className="w-full bg-white/5 border border-white/10 rounded-lg text-white/90 pl-10 pr-4 py-2 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+              <div className="text-xs text-white/50">
+                {filteredData.length} of {processedData?.rows?.length || 0} rows
+              </div>
+            </div>
+            
+            <button
+              onClick={handleDownloadCSV}
+              disabled={!filteredData.length}
+              className="flex items-center gap-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-white/90 px-4 py-2 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="h-4 w-4" />
+              Download CSV
+            </button>
+          </div>
+        </>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
-        {/* Distribution Analysis */}
         <ChartCard
           title="Distribution Analysis"
           description="Statistical distribution and density"
@@ -357,7 +458,6 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
           />
         </ChartCard>
 
-        {/* Time Series Analysis */}
         <ChartCard
           title="Time Series Analysis"
           description="Trends over time"
@@ -402,20 +502,19 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
           )}
         </ChartCard>
 
-        {/* Category Comparison */}
         <ChartCard
-          title="Category Comparison"
+          title={`Category Comparison: ${selectedCategorical}`}
           description="Distribution of categories"
           icon={<BarChart2 className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('category', chartData)}
+          onExplain={() => handleExplain('category', { column: selectedCategorical })}
           isExplaining={explaining['category']}
         >
-          {chartData.categoryData ? (
+          {categoryData ? (
             <Plot
               data={[{
                 type: 'bar',
-                x: chartData.categoryData.categories,
-                y: chartData.categoryData.counts,
+                x: categoryData.categories,
+                y: categoryData.counts,
                 marker: { color: COLORS[2] },
               }]}
               layout={{
@@ -424,7 +523,7 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
                 xaxis: {
                   ...defaultLayout.xaxis,
                   tickangle: -45,
-                  title: processedData?.summary.categoricalColumns[0] || '',
+                  title: selectedCategorical,
                 },
                 yaxis: {
                   ...defaultLayout.yaxis,
@@ -442,7 +541,6 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
           )}
         </ChartCard>
 
-        {/* Correlation Analysis */}
         <ChartCard
           title="Correlation Analysis"
           description="Relationship between variables"
@@ -471,23 +569,30 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
           )}
         </ChartCard>
 
-        {/* Proportional Analysis */}
         <ChartCard
-          title="Proportional Analysis"
+          title={`Proportional Analysis: ${selectedCategorical}`}
           description="Distribution across categories"
           icon={<PieChart className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('proportion', chartData)}
+          onExplain={() => handleExplain('proportion', { column: selectedCategorical })}
           isExplaining={explaining['proportion']}
         >
-          {chartData.categoryData ? (
+          {categoryData ? (
             <Plot
               data={[{
                 type: 'pie',
-                labels: chartData.categoryData.categories,
-                values: chartData.categoryData.counts,
+                labels: categoryData.categories,
+                values: categoryData.counts,
                 marker: { colors: COLORS },
+                textinfo: 'label+percent',
+                textposition: 'inside',
+                insidetextorientation: 'radial'
               }]}
-              layout={{ ...defaultLayout }}
+              layout={{ 
+                ...defaultLayout,
+                title: selectedCategorical && selectedCategorical.length > 20 
+                  ? `${selectedCategorical.substring(0, 20)}...` 
+                  : selectedCategorical
+              }}
               config={defaultConfig}
               style={{ width: '100%', height: '100%' }}
               useResizeHandler
@@ -499,7 +604,6 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
           )}
         </ChartCard>
 
-        {/* Outlier Detection */}
         <ChartCard
           title="Outlier Detection"
           description="Identify anomalies in data"
