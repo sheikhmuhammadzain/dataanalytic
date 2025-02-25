@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Loader2, MessageSquare, X, ChevronDown } from 'lucide-react';
 import { useDataStore } from '../store/dataStore';
-import { getChatCompletion } from '../services/groq';
+import { getChatCompletion } from '../services/gemini';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 
@@ -89,7 +89,7 @@ export const DataChat: React.FC = () => {
     if (!processedData) return '';
     
     const { summary } = processedData;
-    return `
+    const context = `
       Dataset Summary:
       - Total rows: ${summary.rowCount}
       - Total columns: ${summary.columnCount}
@@ -106,21 +106,36 @@ export const DataChat: React.FC = () => {
           return `${col}: ${statInfo.join(', ')}`;
         })
         .join('\n')}
-    `;
+    `.trim();
+
+    return context;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !processedData) return;
+    if (!input.trim()) {
+      return;
+    }
+
+    if (!processedData) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Please upload a CSV file first to analyze the data.',
+      }]);
+      return;
+    }
 
     const userMessage = { role: 'user' as const, content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    try {
-      setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }]);
+    // Add a loading message immediately
+    setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }]);
 
+    try {
+      console.log('Getting chat completion for:', input);
+      
       await getChatCompletion(
         input,
         getDataContext(),
@@ -128,7 +143,7 @@ export const DataChat: React.FC = () => {
           setMessages(prev => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage.role === 'assistant') {
+            if (lastMessage && lastMessage.role === 'assistant') {
               lastMessage.content += chunk;
             }
             return newMessages;
@@ -136,23 +151,55 @@ export const DataChat: React.FC = () => {
         }
       );
 
+      // Update streaming status when complete
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
-        if (lastMessage.role === 'assistant') {
+        if (lastMessage && lastMessage.role === 'assistant') {
           lastMessage.isStreaming = false;
         }
         return newMessages;
       });
     } catch (error) {
       console.error('Failed to get response:', error);
-      setMessages(prev => [
-        ...prev.slice(0, -1),
-        {
-          role: 'assistant',
-          content: 'Sorry, I encountered an error while processing your request.',
-        },
-      ]);
+      
+      // Format a user-friendly error message
+      let errorMessage = 'Sorry, I encountered an error while processing your request. ';
+      
+      if (error instanceof Error) {
+        console.log('Error details:', error.message);
+        
+        if (error.message.includes('API key') || error.message.includes('key issue')) {
+          errorMessage += 'There seems to be an issue with the API configuration. Please check your API key.';
+        } else if (error.message.includes('not found') || error.message.includes('404')) {
+          errorMessage += 'Cannot connect to the AI service. Please make sure the server is running.';
+        } else if (error.message.includes('Failed to connect')) {
+          errorMessage += 'Unable to connect to the AI service. Please check your network connection.';
+        } else if (error.message.includes('timeout') || error.message.includes('timed out')) {
+          errorMessage += 'The request took too long to complete. Please try again.';
+        } else {
+          errorMessage += 'Please try again or refresh the page.';
+        }
+      } else {
+        errorMessage += 'An unexpected error occurred. Please try again.';
+      }
+
+      // Replace the loading message with the error message
+      setMessages(prev => {
+        const newMessages = [...prev];
+        if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'assistant') {
+          newMessages[newMessages.length - 1] = {
+            role: 'assistant',
+            content: errorMessage,
+          };
+          return newMessages;
+        } else {
+          return [...prev, {
+            role: 'assistant',
+            content: errorMessage,
+          }];
+        }
+      });
     } finally {
       setIsLoading(false);
     }

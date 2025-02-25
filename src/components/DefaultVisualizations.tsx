@@ -13,7 +13,7 @@ import {
   HelpCircle,
   Loader2
 } from 'lucide-react';
-import { getChatCompletion } from '../services/groq';
+import { getChatCompletion } from '../services/gemini';
 import { AIExplanationModal } from './AIExplanationModal';
 
 const COLORS = [
@@ -140,57 +140,30 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
 
   const handleExplain = async (chartType: string, data: any) => {
     setExplaining(prev => ({ ...prev, [chartType]: true }));
-    
+    let prompt = '';
+
     try {
-      let prompt = '';
       switch (chartType) {
         case 'distribution':
-          prompt = `Analyze this distribution data for the column "${data.primaryColumn}". Key statistics:
+          prompt = `Analyze the distribution of "${data.column}". Please provide insights about:
 
-**Mean**: ${data.stats.mean.toFixed(2)}
-**Median**: ${data.stats.median.toFixed(2)}
-**Standard Deviation**: ${data.stats.stdDev.toFixed(2)}
-
-Please provide insights about:
-1. The shape of the distribution
-2. Any skewness or unusual patterns
-3. The spread of the data
-4. Practical implications of these statistics`;
+1. The shape of the distribution (normal, skewed, etc.)
+2. Key statistics (mean, median, standard deviation)
+3. Any notable patterns or anomalies
+4. Potential implications for the data analysis
+5. Recommendations for further analysis`;
           break;
-        case 'timeSeries':
-          prompt = `Analyze the time series trend for "${data.primaryColumn}". Please provide insights about:
 
-1. Overall trend direction
-2. Any seasonal patterns
-3. Notable peaks or valleys
-4. Rate of change
-5. Any anomalies or unusual patterns`;
-          break;
-        case 'category':
-          prompt = `Analyze the category distribution shown in the bar chart. Please provide insights about:
-
-1. The most frequent categories
-2. Distribution patterns
-3. Any notable imbalances
-4. Potential implications of this distribution`;
-          break;
         case 'correlation':
-          prompt = `Analyze the correlation between the variables shown in the scatter plot. Please provide insights about:
+          prompt = `Analyze the correlation between "${data.primaryColumn}" and "${data.secondaryColumn}". Please provide insights about:
 
-1. The type of relationship (positive, negative, or none)
-2. The strength of the relationship
+1. The strength and direction of the correlation
+2. The significance of the relationship
 3. Any notable patterns or clusters
-4. Potential outliers
-5. Practical implications of this relationship`;
+4. Potential causation factors to investigate
+5. Recommendations for further analysis`;
           break;
-        case 'proportion':
-          prompt = `Analyze the proportional distribution shown in the pie chart. Please provide insights about:
 
-1. Dominant segments
-2. Balance between categories
-3. Any notable patterns
-4. Business or practical implications`;
-          break;
         case 'outlier':
           prompt = `Analyze the box plot for outliers in "${data.primaryColumn}". Please provide insights about:
 
