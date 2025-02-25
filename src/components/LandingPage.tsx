@@ -15,7 +15,8 @@ import {
   Table,
   MessageSquare,
   CheckCircle2,
-  ArrowUpRight
+  ArrowUpRight,
+  X
 } from 'lucide-react';
 import { FileUpload } from './FileUpload';
 import { useDataStore } from '../store/dataStore';
@@ -105,40 +106,86 @@ const benefits = [
 export const LandingPage: React.FC = () => {
   const processedData = useDataStore(state => state.processedData);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   if (processedData) return null;
 
   return (
     <div className="min-h-screen bg-black relative flex flex-col overflow-hidden">
       {/* Spotlight Effect */}
-      <Spotlight />
+      <Spotlight className="top-0 left-0 -translate-x-[60%] -translate-y-[10%]" fill="white" />
 
       {/* Modern gradient background with beam effect */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
-      <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BarChart2 className="h-6 w-6 text-indigo-500" />
-            <span className="font-bold text-xl bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text">
-              DataAnalytics
-            </span>
-          </div>
-          <nav className="flex items-center gap-6">
-            <a href="#features" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Features</a>
-            <a href="#how-it-works" className="text-sm font-medium text-white/70 hover:text-white transition-colors">How It Works</a>
-            <a href="#visualizations" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Visualizations</a>
-            <a
-              href="https://github.com/yourusername/Data-analytics"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-white/70 hover:text-white transition-colors"
+      <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl sticky top-0 z-50 w-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart2 className="h-6 w-6 text-indigo-500" />
+              <span className="font-bold text-xl bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text">
+                DataAnalytics
+              </span>
+            </div>
+            
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="#features" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Features</a>
+              <a href="#how-it-works" className="text-sm font-medium text-white/70 hover:text-white transition-colors">How It Works</a>
+              <a href="#visualizations" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Visualizations</a>
+              <a
+                href="https://github.com/yourusername/Data-analytics"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm font-medium text-white/70 hover:text-white transition-colors"
+              >
+                GitHub <ArrowUpRight className="h-3 w-3" />
+              </a>
+              
+              <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1">
+                Get Started <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </nav>
+            
+            {/* Mobile Navigation Button */}
+            <button 
+              className="md:hidden p-2 text-white/70 hover:text-white focus:outline-none"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              GitHub
-            </a>
-          </nav>
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <div className="space-y-1.5">
+                  <span className="block w-6 h-0.5 bg-white/70"></span>
+                  <span className="block w-6 h-0.5 bg-white/70"></span>
+                  <span className="block w-6 h-0.5 bg-white/70"></span>
+                </div>
+              )}
+            </button>
+          </div>
+          
+          {/* Mobile Navigation Menu */}
+          <div className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${isMenuOpen ? 'max-h-64 opacity-100 py-4' : 'max-h-0 opacity-0'}`}>
+            <div className="flex flex-col space-y-4">
+              <a href="#features" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Features</a>
+              <a href="#how-it-works" className="text-sm font-medium text-white/70 hover:text-white transition-colors">How It Works</a>
+              <a href="#visualizations" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Visualizations</a>
+              <a
+                href="https://github.com/yourusername/Data-analytics"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm font-medium text-white/70 hover:text-white transition-colors"
+              >
+                GitHub <ArrowUpRight className="h-3 w-3" />
+              </a>
+              
+              <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1 w-fit">
+                Get Started <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 

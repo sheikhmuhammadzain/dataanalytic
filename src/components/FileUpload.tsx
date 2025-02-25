@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Upload, Loader2 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
@@ -29,6 +29,9 @@ const secondaryVariant = {
   animate: { opacity: 1 },
 };
 
+const PARSE_CHUNK_SIZE = 50000; // Not directly used by Papa.parse but indicative
+const PROCESS_BATCH_SIZE = 10000; // Process data in smaller batches to yield control
+
 export const FileUpload: React.FC<FileUploadProps> = ({
   className,
   onUploadStart,
@@ -38,12 +41,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const parserRef = useRef<any>(null);
   const setRawData = useDataStore((state) => state.setRawData);
   const processedData = useDataStore((state) => state.processedData);
   const [uploadComplete, setUploadComplete] = useState(false);
+  
+  // Cleanup: Abort the parser if the component unmounts
+  useEffect(() => {
+    return () => {
+      if (parserRef.current && typeof parserRef.current.abort === 'function') {
+        parserRef.current.abort();
+      }
+    };
+  }, []);
 
   const handleFileChange = async (newFiles: File[]) => {
     if (newFiles.length === 0) return;
+
+    if(onUploadStart) onUploadStart();
 
     const file = newFiles[0];
     setFiles([file]);
@@ -56,36 +71,44 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       let lastProgressUpdate = performance.now();
 
       await new Promise((resolve, reject) => {
-        Papa.parse(file, {
+        const parserHandle = Papa.parse(file, {
           header: true,
           dynamicTyping: true,
           skipEmptyLines: true,
           worker: true, // Offload parsing to a web worker
-          chunk: (results) => {
+          chunk: async (results) => {
             const { data, meta } = results;
             if (!Array.isArray(data) || data.length === 0) return;
 
-            // Process each chunk into a consistent format
-            const processedRows = (data as ParsedCSVRow[]).map((row) => {
-              const processedRow: ProcessedRow = {};
-              Object.entries(row).forEach(([key, value]) => {
-                if (typeof value === "string") {
-                  const date = new Date(value);
-                  processedRow[key] = !isNaN(date.getTime())
-                    ? date.getTime()
-                    : value;
-                } else if (value === null || value === undefined) {
-                  processedRow[key] = null;
-                } else {
-                  processedRow[key] = value as number;
-                }
+            // Process data in batches
+            for (let i = 0; i < data.length; i += PROCESS_BATCH_SIZE) {
+              const batch = data.slice(i, i + PROCESS_BATCH_SIZE);
+              const processedRows = batch.map((row: ParsedCSVRow) => {
+                const processedRow: ProcessedRow = {};
+                Object.entries(row).forEach(([key, value]) => {
+                  if (typeof value === "string") {
+                    // Use regex to quickly detect common date formats (e.g., YYYY-MM-DD)
+                    const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+                    if (dateRegex.test(value)) {
+                      const date = new Date(value);
+                      processedRow[key] = !isNaN(date.getTime()) ? date.getTime() : value;
+                    } else {
+                      processedRow[key] = value;
+                    }
+                  } else if (value === null || value === undefined) {
+                    processedRow[key] = null;
+                  } else {
+                    processedRow[key] = value as number;
+                  }
+                });
+                return processedRow;
               });
-              return processedRow;
-            });
+              rows = rows.concat(processedRows);
+              // Yield to the event loop to avoid UI blocking
+              await new Promise(res => setTimeout(res, 0));
+            }
 
-            rows = [...rows, ...processedRows];
-
-            // Throttle progress updates (every 100ms)
+            // Throttle progress updates
             const now = performance.now();
             const processedBytes = meta.cursor || 0;
             const totalBytes = file.size;
@@ -99,6 +122,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             setUploadComplete(true);
             queueMicrotask(() => {
               setRawData(rows);
+              if(onUploadComplete) onUploadComplete();
               resolve(true);
             });
           },
@@ -107,12 +131,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             reject(error);
           },
         });
+        parserRef.current = parserHandle;
       });
     } catch (error) {
       console.error("Error processing CSV:", error);
-      alert(
-        "Error processing CSV file. Please check the format and try again."
-      );
+      alert("Error processing CSV file. Please check the format and try again.");
     } finally {
       setIsLoading(false);
       setProgress(0);

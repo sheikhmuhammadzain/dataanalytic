@@ -360,7 +360,6 @@ export const DataVisualizations: React.FC<DataVisualizationsProps> = ({ defaultV
     </div>
   );
 };
-
 // Statistical utility functions
 function calculateKDE(values: number[]): { x: number[]; y: number[] } {
   const bw = 0.9 * (deviation(values) || 1) * Math.pow(values.length, -0.2);
@@ -405,3 +404,4 @@ function calculateRanks(values: number[]): number[] {
 function sum(values: number[]): number {
   return values.reduce((a, b) => a + b, 0);
 }
+

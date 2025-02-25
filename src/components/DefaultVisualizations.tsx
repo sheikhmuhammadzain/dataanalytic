@@ -128,6 +128,7 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
   const processedData = useDataStore(state => state.processedData);
   const [selectedChart, setSelectedChart] = useState<string>('distribution');
   const [selectedColumn, setSelectedColumn] = useState<string>('');
+  const [selectedCategorical, setSelectedCategorical] = useState<string>("");
   const [explaining, setExplaining] = useState<Record<string, boolean>>({});
   const [modalOpen, setModalOpen] = useState(false);
   const [explanation, setExplanation] = useState('');
@@ -137,6 +138,12 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       setSelectedColumn(processedData.summary.numericalColumns[0]);
     }
   }, [processedData]);
+
+  useEffect(() => {
+    if (processedData?.summary?.categoricalColumns && processedData.summary.categoricalColumns.length > 0 && !selectedCategorical) {
+      setSelectedCategorical(processedData.summary.categoricalColumns[0]);
+    }
+  }, [processedData, selectedCategorical]);
 
   const handleExplain = async (chartType: string, data: any) => {
     setExplaining(prev => ({ ...prev, [chartType]: true }));
@@ -262,19 +269,16 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       ) : null;
 
     // Improved category data processing
-    const categoryColumn = processedData.summary.categoricalColumns[0];
-    const categoryData = categoryColumn ? 
-      Object.entries(
-        processedData.rows.reduce((acc, row) => {
-          const cat = String(row[categoryColumn] || 'Unknown');
-          if (!acc[cat]) acc[cat] = 0;
-          acc[cat]++;
-          return acc;
-        }, {} as Record<string, number>)
-      )
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-    : null;
+    const categoryData = useMemo(() => {
+      if (!processedData?.rows || !selectedCategorical) return null;
+      const counts: Record<string, number> = {};
+      processedData.rows.forEach(row => {
+        const value = row[selectedCategorical];
+        const key = value != null ? String(value) : "Unknown";
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      return { categories: Object.keys(counts), counts: Object.values(counts) };
+    }, [processedData, selectedCategorical]);
 
     // Correlation data
     const correlationData = numericColumns.length > 1 ? {
@@ -291,7 +295,7 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       categoryData,
       correlationData,
     };
-  }, [processedData]);
+  }, [processedData, selectedCategorical]);
 
   if (!chartData) return null;
 
@@ -410,11 +414,9 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
             <Plot
               data={[{
                 type: 'bar',
-                x: chartData.categoryData.map(([cat]) => cat),
-                y: chartData.categoryData.map(([, count]) => count),
+                x: chartData.categoryData.categories,
+                y: chartData.categoryData.counts,
                 marker: { color: COLORS[2] },
-                text: chartData.categoryData.map(([, count]) => count),
-                textposition: 'auto',
               }]}
               layout={{
                 ...defaultLayout,
@@ -481,8 +483,8 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
             <Plot
               data={[{
                 type: 'pie',
-                labels: chartData.categoryData.map(([cat]) => cat),
-                values: chartData.categoryData.map(([, val]) => val),
+                labels: chartData.categoryData.categories,
+                values: chartData.categoryData.counts,
                 marker: { colors: COLORS },
               }]}
               layout={{ ...defaultLayout }}

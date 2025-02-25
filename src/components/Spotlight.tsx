@@ -7,14 +7,11 @@ type SpotlightProps = {
   fill?: string;
 };
 
-export const Spotlight = ({
-  className,
-  fill = "rgba(255, 147, 0, 0.3)", // Default orange sunlight color
-}: SpotlightProps = {}) => {
+export const Spotlight = ({ className, fill }: SpotlightProps) => {
   return (
     <svg
       className={cn(
-        "animate-spotlight pointer-events-none absolute z-[10] h-[169%] w-[138%] lg:w-[84%] opacity-0 top-0 left-0",
+        "animate-spotlight pointer-events-none absolute z-[1] h-[200%] w-[150%] opacity-0",
         className
       )}
       xmlns="http://www.w3.org/2000/svg"
@@ -28,9 +25,9 @@ export const Spotlight = ({
           rx="1924.71"
           ry="273.501"
           transform="matrix(-0.822377 -0.568943 -0.568943 0.822377 3631.88 2291.09)"
-          fill={fill}
-          fillOpacity="0.21"
-        />
+          fill={fill || "white"}
+          fillOpacity="0.3"
+        ></ellipse>
       </g>
       <defs>
         <filter
@@ -42,17 +39,17 @@ export const Spotlight = ({
           filterUnits="userSpaceOnUse"
           colorInterpolationFilters="sRGB"
         >
-          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feFlood floodOpacity="0" result="BackgroundImageFix"></feFlood>
           <feBlend
             mode="normal"
             in="SourceGraphic"
             in2="BackgroundImageFix"
             result="shape"
-          />
+          ></feBlend>
           <feGaussianBlur
-            stdDeviation="100" // Reduced for a sharper beam
+            stdDeviation="180"
             result="effect1_foregroundBlur_1065_8"
-          />
+          ></feGaussianBlur>
         </filter>
       </defs>
     </svg>
