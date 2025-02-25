@@ -13,7 +13,8 @@ import {
   HelpCircle,
   Loader2,
   Search,
-  Download
+  Download,
+  Grid2X2
 } from 'lucide-react';
 import { getChatCompletion } from '../services/gemini';
 import { AIExplanationModal } from './AIExplanationModal';
@@ -35,6 +36,7 @@ interface ChartCardProps {
   children: React.ReactNode;
   onExplain: () => void;
   isExplaining: boolean;
+  isLoading?: boolean;
 }
 
 const ChartCard: React.FC<ChartCardProps> = ({ 
@@ -43,7 +45,8 @@ const ChartCard: React.FC<ChartCardProps> = ({
   icon, 
   children,
   onExplain,
-  isExplaining
+  isExplaining,
+  isLoading = false
 }) => (
   <div className="flex flex-col h-full rounded-2xl border border-indigo-500/10 bg-white/5 backdrop-blur-lg">
     <div className="flex items-center justify-between p-6 border-b border-indigo-500/10">
@@ -55,7 +58,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
         <div className="relative">
           <button
             onClick={onExplain}
-            disabled={isExplaining}
+            disabled={isExplaining || isLoading}
             className="group relative inline-block"
           >
          {isExplaining ? (
@@ -76,7 +79,15 @@ const ChartCard: React.FC<ChartCardProps> = ({
         </div>
       </div>
     </div>
-    <div className="flex-1 p-6 pt-4 overflow-hidden">
+    <div className="flex-1 p-6 pt-4 overflow-hidden relative">
+      {isLoading ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 text-indigo-400 animate-spin" />
+            <p className="text-white/70 text-sm font-medium">Loading chart data...</p>
+          </div>
+        </div>
+      ) : null}
       {children}
     </div>
   </div>
@@ -123,6 +134,24 @@ const detectTimeColumn = (headers: string[], rows: any[]) => {
   return bestMatch.score > 0.8 ? bestMatch.header : null;
 };
 
+const prepareOptimizedCategoryData = (categoriesArray, countsArray, limit = 15) => {
+  if (categoriesArray.length <= limit) {
+    return { categories: categoriesArray, counts: countsArray };
+  }
+  
+  // Take top categories up to the limit
+  const topCategories = categoriesArray.slice(0, limit - 1);
+  const topCounts = countsArray.slice(0, limit - 1);
+  
+  // Aggregate the rest into "Other"
+  const otherSum = countsArray.slice(limit - 1).reduce((sum, count) => sum + count, 0);
+  
+  return {
+    categories: [...topCategories, "Other"],
+    counts: [...topCounts, otherSum]
+  };
+};
+
 interface DefaultVisualizationsProps {
   showFilters: boolean;
 }
@@ -136,18 +165,57 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
   const [modalOpen, setModalOpen] = useState(false);
   const [explanation, setExplanation] = useState('');
   const [filterValue, setFilterValue] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<Record<string, boolean>>({
+    distribution: true,
+    boxplot: true,
+    timeSeries: true,
+    category: true,
+    correlation: true,
+    proportion: true,
+    outlier: true
+  });
 
   useEffect(() => {
     if (processedData?.summary?.numericalColumns.length) {
       setSelectedColumn(processedData.summary.numericalColumns[0]);
     }
+    
+    if (processedData?.summary?.categoricalColumns && processedData.summary.categoricalColumns.length > 0) {
+      console.log("Setting initial selectedCategorical to:", processedData.summary.categoricalColumns[0]);
+      setSelectedCategorical(processedData.summary.categoricalColumns[0]);
+    }
   }, [processedData]);
 
   useEffect(() => {
-    if (processedData?.summary?.categoricalColumns && processedData.summary.categoricalColumns.length > 0 && !selectedCategorical) {
-      setSelectedCategorical(processedData.summary.categoricalColumns[0]);
+    if (processedData) {
+      setIsLoading({
+        distribution: true,
+        boxplot: true,
+        timeSeries: true,
+        category: true,
+        correlation: true,
+        proportion: true,
+        outlier: true
+      });
+      
+      // Let the chartData and categoryData useEffects handle clearing these states
+      // However, add a safety timeout to ensure loading states are cleared even if something goes wrong
+      const timer = setTimeout(() => {
+        console.log("Safety timeout: forcing all loading states to false");
+        setIsLoading({
+          distribution: false,
+          boxplot: false,
+          timeSeries: false,
+          category: false,
+          correlation: false,
+          proportion: false,
+          outlier: false
+        });
+      }, 5000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [processedData, selectedCategorical]);
+  }, [processedData]);
 
   const handleExplain = async (chartType: string, data: any) => {
     setExplaining(prev => ({ ...prev, [chartType]: true }));
@@ -183,6 +251,26 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
 3. The symmetry of the distribution
 4. Any unusual patterns
 5. Practical implications of these outliers`;
+          break;
+        
+        case 'category':
+          prompt = `Analyze the categorical distribution for "${data.column}". Please provide insights about:
+
+1. The most prominent categories and their significance
+2. The balance or imbalance between categories
+3. Any unusual patterns in the category distribution
+4. Potential implications for further analysis
+5. How this categorical distribution might impact other variables`;
+          break;
+        
+        case 'proportion':
+          prompt = `Analyze the proportional distribution for "${data.column}". Please provide insights about:
+
+1. The relative sizes of each category segment
+2. Any dominant categories and their business significance
+3. The overall diversity of categories
+4. How this distribution might impact decision-making
+5. Recommendations for further investigation based on these proportions`;
           break;
       }
 
@@ -234,34 +322,104 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
   const categoryData = useMemo(() => {
     if (!processedData?.rows || !selectedCategorical) return null;
     
+    console.log("Generating categoryData for", selectedCategorical);
+    
+    // Create a more efficient aggregation process
     const counts: Record<string, number> = {};
-    processedData.rows.forEach(row => {
-      const value = row[selectedCategorical];
-      const key = value != null ? String(value).trim() : "Unknown";
-      counts[key] = (counts[key] || 0) + 1;
-    });
+    const maxCategoriesToProcess = 100; // Limit for very large datasets
+    let totalProcessed = 0;
     
-    const sortedData = Object.entries(counts)
-      .filter(([key]) => key !== "")
-      .sort((a, b) => b[1] - a[1]);
+    // Process in batches for very large datasets
+    const batchSize = 10000;
+    const totalRows = processedData.rows.length;
     
-    const topCategories = sortedData.slice(0, 10);
-    const otherSum = sortedData.slice(10).reduce((sum, [, count]) => sum + count, 0);
-    
-    const categories = topCategories.map(([cat]) => cat);
-    const categoryCounts = topCategories.map(([, count]) => count);
-    
-    if (otherSum > 0) {
-      categories.push("Other");
-      categoryCounts.push(otherSum);
+    for (let i = 0; i < totalRows; i += batchSize) {
+      const batch = processedData.rows.slice(i, Math.min(i + batchSize, totalRows));
+      
+      batch.forEach(row => {
+        const value = row[selectedCategorical];
+        const key = value != null ? String(value).trim() : "Unknown";
+        if (key !== "") {
+          counts[key] = (counts[key] || 0) + 1;
+        }
+      });
+      
+      totalProcessed += batch.length;
+      console.log(`Processed ${totalProcessed} of ${totalRows} rows`);
     }
+    
+    // Sort and limit categories for visualization
+    const sortedData = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, maxCategoriesToProcess);
+    
+    // Prepare data structure for visualization
+    const categories = sortedData.map(([cat]) => cat);
+    const categoryCounts = sortedData.map(([, count]) => count);
+    
+    // Calculate the total count of all categories
+    const totalCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    
+    // Calculate percentages for each category
+    const percentages = categoryCounts.map(count => (count / totalCount) * 100);
+    
+    if (categories.length === 0) {
+      categories.push("No Data");
+      categoryCounts.push(0);
+      percentages.push(100);
+    }
+    
+    console.log("Generated categories:", categories.length);
     
     return {
       categories,
       counts: categoryCounts,
-      rawData: sortedData
+      percentages,
+      rawData: sortedData,
+      totalCount
     };
   }, [processedData, selectedCategorical]);
+
+  useEffect(() => {
+    console.log("categoryData updated:", categoryData ? "data available" : "no data");
+  }, [categoryData]);
+
+  useEffect(() => {
+    if (categoryData) {
+      console.log("Setting category loading states to false");
+      setIsLoading(prev => ({ 
+        ...prev, 
+        category: false,
+        proportion: false
+      }));
+      
+      // For very large datasets, help garbage collection
+      if (processedData?.rows && processedData.rows.length > 100000) {
+        console.log("Large dataset detected - managing memory");
+        // Force a small delay to ensure rendering completes
+        const timer = setTimeout(() => {
+          // This timeout helps ensure the UI has time to update
+          // before any heavy operations continue
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [categoryData, processedData?.rows?.length]);
+
+  useEffect(() => {
+    if (isLoading.category || isLoading.proportion) {
+      const timer = setTimeout(() => {
+        console.log("Forcing category loading states to false via timeout");
+        setIsLoading(prev => ({
+          ...prev,
+          category: false,
+          proportion: false
+        }));
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading.category, isLoading.proportion]);
 
   const chartData = useMemo(() => {
     if (!processedData?.rows?.length) return null;
@@ -312,10 +470,28 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       stats,
       histogramData,
       timeSeriesData,
-      categoryData,
       correlationData,
     };
-  }, [processedData, categoryData]);
+  }, [processedData]);
+
+  useEffect(() => {
+    if (chartData) {
+      setIsLoading(prev => ({
+        ...prev,
+        distribution: false,
+        boxplot: false,
+        outlier: false
+      }));
+      
+      if (chartData.timeSeriesData) {
+        setIsLoading(prev => ({ ...prev, timeSeries: false }));
+      }
+      
+      if (chartData.correlationData) {
+        setIsLoading(prev => ({ ...prev, correlation: false }));
+      }
+    }
+  }, [chartData]);
 
   const filteredData = useMemo(() => {
     if (!processedData?.rows) return [];
@@ -354,284 +530,344 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
     saveAs(blob, `data-export-${new Date().toISOString().split('T')[0]}.csv`);
   }, [processedData?.headers, filteredData]);
 
-  if (!chartData) return null;
+  if (!processedData || !chartData) return null;
 
   return (
     <div className="space-y-6">
-      {showFilters && (
+      {!processedData ? (
+        <div className="flex flex-col items-center justify-center h-[400px] bg-white/5 backdrop-blur-lg rounded-xl border border-indigo-500/10">
+          <Loader2 className="h-12 w-12 text-indigo-400 animate-spin mb-4" />
+          <p className="text-white/70 text-base font-medium">Loading visualization data...</p>
+          <p className="text-white/50 text-sm mt-2">Please wait while we process your data</p>
+        </div>
+      ) : (
         <>
-          <div className="flex flex-wrap gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-white/90">Chart Type</label>
-              <select
-                value={selectedChart}
-                onChange={(e) => setSelectedChart(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
-              >
-                <option value="distribution">Distribution Analysis</option>
-                <option value="timeSeries">Time Series</option>
-                <option value="correlation">Correlation Analysis</option>
-                <option value="categorical">Categorical Analysis</option>
-              </select>
-            </div>
+          {showFilters && (
+            <>
+              <div className="flex flex-wrap gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white/90">Chart Type</label>
+                  <select
+                    value={selectedChart}
+                    onChange={(e) => setSelectedChart(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
+                  >
+                    <option value="distribution">Distribution Analysis</option>
+                    <option value="timeSeries">Time Series</option>
+                    <option value="correlation">Correlation Analysis</option>
+                    <option value="categorical">Categorical Analysis</option>
+                  </select>
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-white/90">Column</label>
-              <select
-                value={selectedColumn}
-                onChange={(e) => setSelectedColumn(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
-              >
-                {processedData.summary.numericalColumns.map(col => (
-                  <option key={col} value={col}>{col}</option>
-                ))}
-              </select>
-            </div>
-            
-            {processedData.summary.categoricalColumns && processedData.summary.categoricalColumns.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white/90">Category Column</label>
-                <select
-                  value={selectedCategorical}
-                  onChange={(e) => setSelectedCategorical(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white/90">Column</label>
+                  <select
+                    value={selectedColumn}
+                    onChange={(e) => setSelectedColumn(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
+                  >
+                    {processedData.summary.numericalColumns.map(col => (
+                      <option key={col} value={col}>{col}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {processedData.summary.categoricalColumns && processedData.summary.categoricalColumns.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/90">Category Column</label>
+                    <select
+                      value={selectedCategorical}
+                      onChange={(e) => setSelectedCategorical(e.target.value)}
+                      className="bg-white/5 border border-white/10 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:border-indigo-500/50"
+                    >
+                      {processedData.summary.categoricalColumns.map(col => (
+                        <option key={col} value={col}>{col}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex-grow space-y-2">
+                  <label className="text-sm font-medium text-white/90">Filter Data</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+                    <input
+                      type="text"
+                      value={filterValue}
+                      onChange={(e) => setFilterValue(e.target.value)}
+                      placeholder="Search in data..."
+                      className="w-full bg-white/5 border border-white/10 rounded-lg text-white/90 pl-10 pr-4 py-2 focus:outline-none focus:border-indigo-500/50"
+                    />
+                  </div>
+                  <div className="text-xs text-white/50">
+                    {filteredData.length} of {processedData?.rows?.length || 0} rows
+                  </div>
+                </div>
+                
+                <button
+                  onClick={handleDownloadCSV}
+                  disabled={!filteredData.length}
+                  className="flex items-center gap-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-white/90 px-4 py-2 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {processedData.summary.categoricalColumns.map(col => (
-                    <option key={col} value={col}>{col}</option>
-                  ))}
-                </select>
+                  <Download className="h-4 w-4" />
+                  Download CSV
+                </button>
               </div>
-            )}
-          </div>
+            </>
+          )}
           
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex-grow space-y-2">
-              <label className="text-sm font-medium text-white/90">Filter Data</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
-                <input
-                  type="text"
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
-                  placeholder="Search in data..."
-                  className="w-full bg-white/5 border border-white/10 rounded-lg text-white/90 pl-10 pr-4 py-2 focus:outline-none focus:border-indigo-500/50"
-                />
-              </div>
-              <div className="text-xs text-white/50">
-                {filteredData.length} of {processedData?.rows?.length || 0} rows
-              </div>
+          {!chartData ? (
+            <div className="flex flex-col items-center justify-center h-[300px] bg-white/5 backdrop-blur-lg rounded-xl border border-indigo-500/10 mt-6">
+              <Loader2 className="h-10 w-10 text-indigo-400 animate-spin mb-3" />
+              <p className="text-white/70 text-sm">Preparing visualization charts...</p>
             </div>
-            
-            <button
-              onClick={handleDownloadCSV}
-              disabled={!filteredData.length}
-              className="flex items-center gap-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-white/90 px-4 py-2 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="h-4 w-4" />
-              Download CSV
-            </button>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
+              <ChartCard
+                title="Distribution Analysis"
+                description="Statistical distribution and density"
+                icon={<Activity className="h-5 w-5 text-indigo-400" />}
+                onExplain={() => handleExplain('distribution', chartData)}
+                isExplaining={explaining['distribution']}
+                isLoading={isLoading['distribution']}
+              >
+                <Plot
+                  data={[{
+                    type: 'violin',
+                    x: chartData.values,
+                    name: chartData.primaryColumn,
+                    box: { visible: true },
+                    meanline: { visible: true },
+                    line: { color: COLORS[0] },
+                  }]}
+                  layout={{ ...defaultLayout }}
+                  config={defaultConfig}
+                  style={{ width: '100%', height: '100%' }}
+                  useResizeHandler
+                />
+              </ChartCard>
+
+              <ChartCard
+                title="Time Series Analysis"
+                description="Trends over time"
+                icon={<LineChart className="h-5 w-5 text-indigo-400" />}
+                onExplain={() => handleExplain('timeSeries', chartData)}
+                isExplaining={explaining['timeSeries']}
+                isLoading={isLoading['timeSeries']}
+              >
+                {chartData.timeSeriesData ? (
+                  <Plot
+                    data={[{
+                      type: 'scatter',
+                      mode: 'lines',
+                      x: chartData.timeSeriesData.map(d => d.x),
+                      y: chartData.timeSeriesData.map(d => d.y),
+                      line: { 
+                        color: COLORS[1],
+                        shape: 'spline',
+                        smoothing: 0.3,
+                      }
+                    }]}
+                    layout={{
+                      ...defaultLayout,
+                      xaxis: {
+                        ...defaultLayout.xaxis,
+                        type: 'date',
+                        tickformat: '%Y-%m-%d',
+                        nticks: 10
+                      }
+                    }}
+                    config={{
+                      ...defaultConfig,
+                      displayModeBar: true,
+                      modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+                    }}
+                    style={{ width: '100%', height: '100%' }}
+                    useResizeHandler
+                  />
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-white/50">
+                    No time series data available
+                  </div>
+                )}
+              </ChartCard>
+
+              <ChartCard
+                title={`Category Distribution: ${selectedCategorical}`}
+                description="Hierarchical view of categories"
+                icon={<Grid2X2 className="h-5 w-5 text-indigo-400" />}
+                onExplain={() => handleExplain('category', { column: selectedCategorical })}
+                isExplaining={explaining['category']}
+                isLoading={isLoading['category']}
+              >
+                {!categoryData ? (
+                  <div className="h-[300px] flex items-center justify-center text-white/50">
+                    No categorical data available
+                  </div>
+                ) : (
+                  <Plot
+                    data={[{
+                      type: 'treemap',
+                      labels: (() => {
+                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                        return optimized.categories;
+                      })(),
+                      parents: Array((() => {
+                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                        return optimized.categories.length;
+                      })()).fill(''),
+                      values: (() => {
+                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                        return optimized.counts;
+                      })(),
+                      hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percentRoot:.1f}%<extra></extra>',
+                      texttemplate: '<b>%{label}</b><br>%{percentRoot:.1f}%',
+                      branchvalues: 'total',
+                      marker: {
+                        colors: (() => {
+                          const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                          return optimized.categories.map((_, i) => COLORS[i % COLORS.length]);
+                        })(),
+                        line: { width: 1, color: 'rgba(255,255,255,0.2)' }
+                      },
+                      textinfo: 'label+value',
+                      textposition: 'middle',
+                      hoverlabel: {
+                        bgcolor: '#262626',
+                        bordercolor: '#404040',
+                        font: { color: 'white' }
+                      }
+                    }]}
+                    layout={{
+                      ...defaultLayout,
+                      margin: { t: 30, r: 10, b: 10, l: 10 },
+                    }}
+                    config={defaultConfig}
+                    style={{ width: '100%', height: '100%' }}
+                    useResizeHandler
+                  />
+                )}
+              </ChartCard>
+
+              <ChartCard
+                title="Correlation Analysis"
+                description="Relationship between variables"
+                icon={<ScatterChart className="h-5 w-5 text-indigo-400" />}
+                onExplain={() => handleExplain('correlation', chartData)}
+                isExplaining={explaining['correlation']}
+                isLoading={isLoading['correlation']}
+              >
+                {chartData.correlationData ? (
+                  <Plot
+                    data={[{
+                      type: 'scatter',
+                      mode: 'markers',
+                      x: chartData.correlationData.x,
+                      y: chartData.correlationData.y,
+                      marker: { color: COLORS[3] },
+                    }]}
+                    layout={{ ...defaultLayout }}
+                    config={defaultConfig}
+                    style={{ width: '100%', height: '100%' }}
+                    useResizeHandler
+                  />
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-white/50">
+                    Insufficient numerical columns for correlation
+                  </div>
+                )}
+              </ChartCard>
+
+              <ChartCard
+                title={`Proportional Analysis: ${selectedCategorical}`}
+                description="Distribution across categories"
+                icon={<PieChart className="h-5 w-5 text-indigo-400" />}
+                onExplain={() => handleExplain('proportion', { column: selectedCategorical })}
+                isExplaining={explaining['proportion']}
+                isLoading={isLoading['proportion']}
+              >
+                {!categoryData ? (
+                  <div className="h-[300px] flex items-center justify-center text-white/50">
+                    No categorical data available
+                  </div>
+                ) : (
+                  <Plot
+                    data={[{
+                      type: 'sunburst',
+                      labels: (() => {
+                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                        return [...optimized.categories, 'Total'];
+                      })(),
+                      parents: (() => {
+                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                        return [...Array(optimized.categories.length).fill('Total'), ''];
+                      })(),
+                      values: (() => {
+                        const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                        return [...optimized.counts, 0];
+                      })(),
+                      branchvalues: 'total',
+                      marker: {
+                        colors: (() => {
+                          const optimized = prepareOptimizedCategoryData(categoryData.categories, categoryData.counts);
+                          return [...optimized.categories.map((_, i) => COLORS[i % COLORS.length]), 'rgba(0,0,0,0)'];
+                        })(),
+                        line: { width: 1, color: 'rgba(255,255,255,0.2)' }
+                      },
+                      textinfo: 'label+percent',
+                      hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percentEntry:.1f}%<extra></extra>',
+                      insidetextorientation: 'radial',
+                      hoverlabel: {
+                        bgcolor: '#262626',
+                        bordercolor: '#404040',
+                        font: { color: 'white' }
+                      }
+                    }]}
+                    layout={{ 
+                      ...defaultLayout,
+                      margin: { t: 30, r: 0, b: 0, l: 0 }
+                    }}
+                    config={defaultConfig}
+                    style={{ width: '100%', height: '100%' }}
+                    useResizeHandler
+                  />
+                )}
+              </ChartCard>
+
+              <ChartCard
+                title="Outlier Detection"
+                description="Identify anomalies in data"
+                icon={<ArrowUpDown className="h-5 w-5 text-indigo-400" />}
+                onExplain={() => handleExplain('outlier', chartData)}
+                isExplaining={explaining['outlier']}
+                isLoading={isLoading['outlier']}
+              >
+                <Plot
+                  data={[{
+                    type: 'box',
+                    y: chartData.values,
+                    name: chartData.primaryColumn,
+                    boxpoints: 'outliers',
+                    marker: { color: COLORS[5] },
+                  }]}
+                  layout={{ ...defaultLayout }}
+                  config={defaultConfig}
+                  style={{ width: '100%', height: '100%' }}
+                  useResizeHandler
+                />
+              </ChartCard>
+            </div>
+          )}
+          
+          <AIExplanationModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            content={explanation}
+          />
         </>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
-        <ChartCard
-          title="Distribution Analysis"
-          description="Statistical distribution and density"
-          icon={<Activity className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('distribution', chartData)}
-          isExplaining={explaining['distribution']}
-        >
-          <Plot
-            data={[{
-              type: 'violin',
-              x: chartData.values,
-              name: chartData.primaryColumn,
-              box: { visible: true },
-              meanline: { visible: true },
-              line: { color: COLORS[0] },
-            }]}
-            layout={{ ...defaultLayout }}
-            config={defaultConfig}
-            style={{ width: '100%', height: '100%' }}
-            useResizeHandler
-          />
-        </ChartCard>
-
-        <ChartCard
-          title="Time Series Analysis"
-          description="Trends over time"
-          icon={<LineChart className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('timeSeries', chartData)}
-          isExplaining={explaining['timeSeries']}
-        >
-          {chartData.timeSeriesData ? (
-            <Plot
-              data={[{
-                type: 'scatter',
-                mode: 'lines',
-                x: chartData.timeSeriesData.map(d => d.x),
-                y: chartData.timeSeriesData.map(d => d.y),
-                line: { 
-                  color: COLORS[1],
-                  shape: 'spline',
-                  smoothing: 0.3,
-                }
-              }]}
-              layout={{
-                ...defaultLayout,
-                xaxis: {
-                  ...defaultLayout.xaxis,
-                  type: 'date',
-                  tickformat: '%Y-%m-%d',
-                  nticks: 10
-                }
-              }}
-              config={{
-                ...defaultConfig,
-                displayModeBar: true,
-                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
-              }}
-              style={{ width: '100%', height: '100%' }}
-              useResizeHandler
-            />
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-white/50">
-              No time series data available
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title={`Category Comparison: ${selectedCategorical}`}
-          description="Distribution of categories"
-          icon={<BarChart2 className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('category', { column: selectedCategorical })}
-          isExplaining={explaining['category']}
-        >
-          {categoryData ? (
-            <Plot
-              data={[{
-                type: 'bar',
-                x: categoryData.categories,
-                y: categoryData.counts,
-                marker: { color: COLORS[2] },
-              }]}
-              layout={{
-                ...defaultLayout,
-                barmode: 'group',
-                xaxis: {
-                  ...defaultLayout.xaxis,
-                  tickangle: -45,
-                  title: selectedCategorical,
-                },
-                yaxis: {
-                  ...defaultLayout.yaxis,
-                  title: 'Count',
-                },
-              }}
-              config={defaultConfig}
-              style={{ width: '100%', height: '100%' }}
-              useResizeHandler
-            />
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-white/50">
-              No categorical data available
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Correlation Analysis"
-          description="Relationship between variables"
-          icon={<ScatterChart className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('correlation', chartData)}
-          isExplaining={explaining['correlation']}
-        >
-          {chartData.correlationData ? (
-            <Plot
-              data={[{
-                type: 'scatter',
-                mode: 'markers',
-                x: chartData.correlationData.x,
-                y: chartData.correlationData.y,
-                marker: { color: COLORS[3] },
-              }]}
-              layout={{ ...defaultLayout }}
-              config={defaultConfig}
-              style={{ width: '100%', height: '100%' }}
-              useResizeHandler
-            />
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-white/50">
-              Insufficient numerical columns for correlation
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title={`Proportional Analysis: ${selectedCategorical}`}
-          description="Distribution across categories"
-          icon={<PieChart className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('proportion', { column: selectedCategorical })}
-          isExplaining={explaining['proportion']}
-        >
-          {categoryData ? (
-            <Plot
-              data={[{
-                type: 'pie',
-                labels: categoryData.categories,
-                values: categoryData.counts,
-                marker: { colors: COLORS },
-                textinfo: 'label+percent',
-                textposition: 'inside',
-                insidetextorientation: 'radial'
-              }]}
-              layout={{ 
-                ...defaultLayout,
-                title: selectedCategorical && selectedCategorical.length > 20 
-                  ? `${selectedCategorical.substring(0, 20)}...` 
-                  : selectedCategorical
-              }}
-              config={defaultConfig}
-              style={{ width: '100%', height: '100%' }}
-              useResizeHandler
-            />
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-white/50">
-              No categorical data available
-            </div>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Outlier Detection"
-          description="Identify anomalies in data"
-          icon={<ArrowUpDown className="h-5 w-5 text-indigo-400" />}
-          onExplain={() => handleExplain('outlier', chartData)}
-          isExplaining={explaining['outlier']}
-        >
-          <Plot
-            data={[{
-              type: 'box',
-              y: chartData.values,
-              name: chartData.primaryColumn,
-              boxpoints: 'outliers',
-              marker: { color: COLORS[5] },
-            }]}
-            layout={{ ...defaultLayout }}
-            config={defaultConfig}
-            style={{ width: '100%', height: '100%' }}
-            useResizeHandler
-          />
-        </ChartCard>
-      </div>
-      
-      <AIExplanationModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        content={explanation}
-      />
     </div>
   );
 };

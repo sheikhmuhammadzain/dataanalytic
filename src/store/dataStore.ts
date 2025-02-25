@@ -206,17 +206,29 @@ export const useDataStore = create<DataStore>((set, get) => ({
       .toLowerCase()
       .split(" ")
       .filter(Boolean);
+    
     if (!searchTerms.length) return processedData.rows;
 
-    return processedData.rows.filter((row) =>
-      searchTerms.every((term) =>
-        selectedColumns.some((col) => {
+    // Enhanced filtering to check all columns if selectedColumns is empty
+    // Otherwise only check the selected columns
+    return processedData.rows.filter((row) => {
+      return searchTerms.every((term) => {
+        // If no columns are selected, search all columns
+        if (selectedColumns.length === 0) {
+          return Object.entries(row).some(([, value]) => {
+            if (value == null) return false;
+            return String(value).toLowerCase().includes(term);
+          });
+        }
+        
+        // Otherwise only search in selected columns
+        return selectedColumns.some((col) => {
           const value = row[col];
           if (value == null) return false;
           return String(value).toLowerCase().includes(term);
-        })
-      )
-    );
+        });
+      });
+    });
   },
   updateData: async (rows, headers) => {
     const { processedData, transformationHistory, currentHistoryIndex } = get();

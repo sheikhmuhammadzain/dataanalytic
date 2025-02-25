@@ -56,7 +56,12 @@ function App() {
     if (!processedData) return;
 
     const headers = processedData.headers;
-    const rows = processedData.rows;
+    const rows = useDataStore.getState().getFilteredData();
+    
+    if (rows.length === 0) {
+      alert('No data available to download');
+      return;
+    }
 
     let csvContent = headers.join(',') + '\n';
     rows.forEach(row => {
@@ -72,7 +77,7 @@ function App() {
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-    saveAs(blob, 'data_export.csv');
+    saveAs(blob, `data-export-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   if (!processedData) {
@@ -152,7 +157,10 @@ function App() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3"
           >
-            <FileUpload />
+            <FileUpload 
+              onUploadStart={() => {}} 
+              onUploadComplete={() => {}}
+            />
           </motion.div>
         </nav>
       </header>
