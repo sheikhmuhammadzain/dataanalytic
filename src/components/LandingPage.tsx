@@ -112,15 +112,19 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black relative flex flex-col overflow-hidden">
-      {/* Spotlight Effect */}
-      <Spotlight className="top-0 left-0 -translate-x-[60%] -translate-y-[10%]" fill="white" />
+      {/* Spotlight Effect - Updated position */}
+      <Spotlight 
+        className="fixed top-[10%] left-[-20%] z-0" 
+        fill="white" 
+      />
 
       {/* Modern gradient background with beam effect */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-10">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
-      <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl sticky top-0 z-50 w-full">
+      {/* Update header z-index */}
+      <header className="relative border-b border-white/10 bg-black/50 backdrop-blur-xl sticky top-0 z-20 w-full">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
