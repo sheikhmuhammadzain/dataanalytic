@@ -3,10 +3,14 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export async function getChatCompletion(
   prompt: string,
   context: string,
-  onChunk: (chunk: string) => void
+  onChunk: (chunk: string) => void,
+  // Optional: Callback for when streaming is complete
+  onComplete?: () => void,
+  // Optional: Callback for errors during streaming
+  onError?: (error: Error) => void
 ) {
   try {
-    console.log('Starting chat completion request');
+    console.log('Starting chat completion stream request');
     
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
@@ -26,20 +30,48 @@ export async function getChatCompletion(
     const fullPrompt = `You are a data analysis assistant. Analyze this dataset: ${trimmedContext}\n\nUser question: ${prompt}\n\nBe concise and focus on key insights.`;
     console.log('Prompt prepared, sending to Gemini API');
     
-    // Use the generateContent method
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    console.log('Received response of length:', text.length);
-    
-    // Simulate streaming by delivering the content in chunks
-    const chunks = splitIntoChunks(text, 15);
-    
-    for (const chunk of chunks) {
-      onChunk(chunk);
-      // Add a small delay between chunks to simulate streaming
-      await new Promise(resolve => setTimeout(resolve, 15));
+    // Use streaming API if available
+    if (model.generateContentStream) {
+      console.log('Using streaming API');
+      const result = await model.generateContentStream(fullPrompt);
+      
+      console.log('Receiving stream from API...');
+      
+      // Process the stream
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        if (chunkText) {
+          // Send individual word chunks for better fade effect
+          const words = chunkText.split(' ');
+          for (const word of words) {
+            onChunk(word + ' ');
+            // Slow down the streaming with longer delay (100-150ms per word)
+            await new Promise(resolve => setTimeout(resolve, 120));
+          }
+        }
+      }
+      
+      console.log('Stream finished');
+      onComplete?.();
+    } else {
+      // Fallback to non-streaming API with simulated streaming
+      console.log('Streaming API not available, using simulated streaming');
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      console.log('Received response of length:', text.length);
+      
+      // Split into smaller chunks for better fade effect (3-5 words per chunk)
+      const chunks = splitIntoChunks(text, 3);
+      
+      for (const chunk of chunks) {
+        onChunk(chunk);
+        // Longer delay between chunks for slower effect (100-150ms)
+        await new Promise(resolve => setTimeout(resolve, 120));
+      }
+      
+      onComplete?.();
     }
   } catch (error) {
     console.error("Error getting chat completion:", error);
@@ -57,7 +89,14 @@ export async function getChatCompletion(
       }
     }
     
-    throw new Error(`Chat completion failed: ${errorMessage}`);
+    const enhancedError = new Error(`Chat completion failed: ${errorMessage}`);
+    
+    // Use the error callback if provided, otherwise throw
+    if (onError) {
+      onError(enhancedError);
+    } else {
+      throw enhancedError;
+    }
   }
 }
 
