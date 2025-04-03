@@ -16,7 +16,7 @@ export async function getChatCompletion(
     
     console.log('Initializing Gemini API with key');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     
     // Create the prompt with context
     const trimmedContext = context.length > 500 ? 
