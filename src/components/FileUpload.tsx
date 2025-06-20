@@ -82,7 +82,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
             // Process data in batches
             for (let i = 0; i < data.length; i += PROCESS_BATCH_SIZE) {
-              const batch = data.slice(i, i + PROCESS_BATCH_SIZE);
+              const batch = data.slice(i, i + PROCESS_BATCH_SIZE) as ParsedCSVRow[];
               const processedRows = batch.map((row: ParsedCSVRow) => {
                 const processedRow: ProcessedRow = {};
                 Object.entries(row).forEach(([key, value]) => {
