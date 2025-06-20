@@ -69,12 +69,27 @@ Please analyze the data and provide a helpful response:`;
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
         if (chunkText) {
-          // Send individual word chunks for better fade effect
-          const words = chunkText.split(' ');
+          // Enhanced word-by-word streaming with natural timing
+          const words = chunkText.split(/(\s+)/); // Keep whitespace
           for (const word of words) {
-            onChunk(word + ' ');
-            // Slightly faster streaming for better UX
-            await new Promise(resolve => setTimeout(resolve, 80));
+            if (word.trim()) {
+              onChunk(word);
+              // Variable delay based on word length and punctuation for more natural feel
+              let delay = 30; // Base delay
+              
+              // Longer delay after punctuation
+              if (/[.!?]$/.test(word.trim())) {
+                delay = 150;
+              } else if (/[,;:]$/.test(word.trim())) {
+                delay = 80;
+              } else if (word.length > 6) {
+                delay = 50; // Slightly longer for long words
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, delay));
+            } else if (word.includes(' ')) {
+              onChunk(word); // Send whitespace immediately
+            }
           }
         }
       }
@@ -91,12 +106,22 @@ Please analyze the data and provide a helpful response:`;
       console.log('Received response of length:', text.length);
       
       // Split into smaller chunks for better fade effect (3-5 words per chunk)
-      const chunks = splitIntoChunks(text, 3);
+      const chunks = splitIntoChunks(text, 1); // One word per chunk for consistency
       
       for (const chunk of chunks) {
-        onChunk(chunk);
-        // Faster simulated streaming
-        await new Promise(resolve => setTimeout(resolve, 80));
+        onChunk(chunk + ' ');
+        // Enhanced timing matching the streaming version
+        let delay = 30;
+        
+        if (/[.!?]$/.test(chunk.trim())) {
+          delay = 150;
+        } else if (/[,;:]$/.test(chunk.trim())) {
+          delay = 80;
+        } else if (chunk.length > 6) {
+          delay = 50;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
       
       onComplete?.();
