@@ -7,6 +7,11 @@ interface ColumnStats {
   mean?: number;
   median?: number;
   stdDev?: number;
+  // Categorical statistics
+  uniqueValues?: number;
+  valueCounts?: Record<string, number>;
+  mostCommon?: Array<{ value: string; count: number; percentage: number }>;
+  totalCount?: number;
 }
 
 interface DataSummary {
@@ -61,10 +66,12 @@ const processDataInChunks = async (
   const headers = Object.keys(rawData[0]);
   const columnTypes = new Map<string, "numerical" | "categorical">();
   const numericalValues: Record<string, number[]> = {};
+  const categoricalValues: Record<string, Record<string, number>> = {};
 
-  // Initialize numerical values arrays
+  // Initialize arrays/maps for data collection
   headers.forEach(header => {
     numericalValues[header] = [];
+    categoricalValues[header] = {};
   });
 
   // Sample first chunk for column type detection
@@ -98,11 +105,16 @@ const processDataInChunks = async (
     // Process chunk
     for (const row of chunk) {
       headers.forEach((header) => {
+        const value = row[header];
+        
         if (columnTypes.get(header) === "numerical") {
-          const value = row[header];
           if (typeof value === "number" && !isNaN(value)) {
             numericalValues[header].push(value);
           }
+        } else {
+          // Categorical column - count values
+          const stringValue = value !== null && value !== undefined ? String(value) : 'null';
+          categoricalValues[header][stringValue] = (categoricalValues[header][stringValue] || 0) + 1;
         }
       });
     }
@@ -111,8 +123,9 @@ const processDataInChunks = async (
     await new Promise(resolve => setTimeout(resolve, 0));
   }
 
-  // Calculate statistics for numerical columns
+  // Calculate statistics for all columns
   const columnStats: Record<string, ColumnStats> = {};
+  
   headers.forEach((header) => {
     if (columnTypes.get(header) === "numerical") {
       const values = numericalValues[header];
@@ -123,8 +136,32 @@ const processDataInChunks = async (
           mean: mean(values),
           median: median(values),
           stdDev: deviation(values),
+          totalCount: values.length
         };
       }
+    } else {
+      // Categorical statistics
+      const valueCounts = categoricalValues[header];
+      const totalCount = Object.values(valueCounts).reduce((sum, count) => sum + count, 0);
+      const uniqueValues = Object.keys(valueCounts).length;
+      
+      // Sort by count descending and get top values
+      const sortedEntries = Object.entries(valueCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10); // Top 10 most common values
+      
+      const mostCommon = sortedEntries.map(([value, count]) => ({
+        value,
+        count,
+        percentage: (count / totalCount) * 100
+      }));
+      
+      columnStats[header] = {
+        uniqueValues,
+        valueCounts,
+        mostCommon,
+        totalCount
+      };
     }
   });
 

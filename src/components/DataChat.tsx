@@ -136,11 +136,30 @@ export const DataChat: React.FC = () => {
   // Initial Welcome Message
   useEffect(() => {
     if (isOpen && messages.length === 0 && !hasInteracted && processedData) {
+      const { summary } = processedData;
+      
+      // Generate dynamic suggested questions based on the data
+      const suggestedQuestions = [
+        `What are the key insights from this ${summary.rowCount}-row dataset?`,
+        summary.numericalColumns.length > 0 ? `Analyze the trends in ${summary.numericalColumns[0]}` : null,
+        summary.categoricalColumns.length > 0 ? `What's the distribution of ${summary.categoricalColumns[0]}?` : null,
+        summary.numericalColumns.length > 1 ? `Compare ${summary.numericalColumns[0]} and ${summary.numericalColumns[1]}` : null,
+        "What patterns or outliers do you notice in the data?",
+        "Summarize the most important findings from this dataset"
+      ].filter(Boolean);
+
+      const welcomeMessage = `Hello! I'm your data analysis assistant. I've analyzed your CSV file with ${summary.rowCount} rows and ${summary.columnCount} columns.
+
+**Here are some questions you can ask me:**
+${suggestedQuestions.slice(0, 4).map(q => `• ${q}`).join('\n')}
+
+Feel free to ask anything about your data - trends, patterns, statistics, or specific insights!`;
+
       setMessages([
         {
           id: 'initial-bot-message',
           role: 'assistant',
-          content: "Hello! I'm ready to help you analyze your data. Ask me anything about the summary or insights.",
+          content: welcomeMessage,
         },
       ]);
     }
@@ -199,25 +218,96 @@ export const DataChat: React.FC = () => {
   const getDataContext = useCallback((): string => {
     if (!processedData) return 'No data loaded.';
 
-    const { summary } = processedData;
-    // Be more selective or concise if context gets too large
+    const { summary, rows } = processedData;
+    
+    // Get sample data rows for better context
+    const sampleSize = Math.min(5, rows.length);
+    const sampleRows = rows.slice(0, sampleSize);
+    
+    // Format sample data for context
+    const sampleDataString = sampleRows.map((row, index) => {
+      const rowData = summary.headers.map(header => `${header}: ${row[header]}`).join(', ');
+      return `Row ${index + 1}: {${rowData}}`;
+    }).join('\n');
+    
+    // Enhanced statistical summary with categorical distributions
+    const statisticalSummary = Object.entries(summary.columnStats)
+      .map(([col, stats]) => {
+        if (!stats || Object.keys(stats).length === 0) return `- ${col}: No statistics available`;
+        
+        const isNumerical = summary.numericalColumns.includes(col);
+        
+        if (isNumerical) {
+          // Numerical statistics
+          const statEntries = Object.entries(stats)
+            .filter(([key]) => ['min', 'max', 'mean', 'median', 'stdDev'].includes(key));
+          const formattedStats = statEntries.map(([key, value]) => {
+            if (typeof value === 'number') {
+              return `${key}: ${value.toFixed(2)}`;
+            }
+            return `${key}: ${value}`;
+          }).join(', ');
+          
+          return `- ${col} (numerical): ${formattedStats}, total: ${stats.totalCount || 0} values`;
+        } else {
+          // Categorical statistics with value counts
+          const { uniqueValues, mostCommon, totalCount, valueCounts } = stats;
+          
+          let categoryInfo = `- ${col} (categorical): ${uniqueValues} unique values, ${totalCount} total entries`;
+          
+          if (mostCommon && mostCommon.length > 0) {
+            categoryInfo += '\n  Value distribution:';
+            mostCommon.slice(0, 5).forEach(({ value, count, percentage }) => {
+              categoryInfo += `\n    • "${value}": ${count} times (${percentage.toFixed(1)}%)`;
+            });
+            
+            // Add specific counts for common status-like fields
+            if (valueCounts && (col.toLowerCase().includes('status') || col.toLowerCase().includes('state') || col.toLowerCase().includes('type'))) {
+              categoryInfo += '\n  Quick reference:';
+              Object.entries(valueCounts).forEach(([value, count]) => {
+                categoryInfo += `\n    • ${value}: ${count}`;
+              });
+            }
+          }
+          
+          return categoryInfo;
+        }
+      })
+      .join('\n');
+    
+    // Enhanced context with more detailed information
     const context = `
-      Dataset Summary Provided:
-      Rows: ${summary.rowCount}, Columns: ${summary.columnCount}
-      Numerical Columns: ${summary.numericalColumns.join(', ') || 'None'}
-      Categorical Columns: ${summary.categoricalColumns.join(', ') || 'None'}
+DATASET OVERVIEW:
+- Total Rows: ${summary.rowCount}
+- Total Columns: ${summary.columnCount}
+- File contains ${summary.numericalColumns.length} numerical and ${summary.categoricalColumns.length} categorical columns
 
-      Basic Statistics (for some columns):
-      ${Object.entries(summary.columnStats)
-        .slice(0, 10) // Limit context size if necessary
-        .map(([col, stats]) => {
-          const statInfo = Object.entries(stats)
-            .map(([key, value]) => `${key}: ${typeof value === 'number' ? value.toFixed(2) : value}`)
-            .join(', ');
-          return `- ${col}: ${statInfo}`;
-        })
-        .join('\n')}
-      (User is asking questions based on this data summary.)
+COLUMN INFORMATION:
+Numerical Columns: ${summary.numericalColumns.length > 0 ? summary.numericalColumns.join(', ') : 'None'}
+Categorical Columns: ${summary.categoricalColumns.length > 0 ? summary.categoricalColumns.join(', ') : 'None'}
+
+DETAILED STATISTICAL SUMMARY:
+${statisticalSummary}
+
+SAMPLE DATA (First ${sampleSize} rows):
+${sampleDataString}
+
+DATA INSIGHTS:
+- Dataset has ${summary.rowCount} records across ${summary.columnCount} different attributes
+- Numerical analysis available for: ${summary.numericalColumns.join(', ') || 'No numerical columns'}
+- Categorical analysis available for: ${summary.categoricalColumns.join(', ') || 'No categorical columns'}
+${summary.rowCount > 1000 ? `- Large dataset with ${summary.rowCount} rows - statistical summaries provided above` : '- Medium-sized dataset suitable for detailed analysis'}
+- Categorical value counts are provided above for frequency-based questions
+
+ANALYSIS CAPABILITIES:
+You can answer questions about:
+- Specific counts (e.g., "How many tickets are closed?", "How many customers are active?")
+- Distributions and percentages for categorical data
+- Statistical analysis for numerical data
+- Trends, patterns, and comparisons between columns
+- Data quality and completeness
+
+The user is asking questions about this dataset. Please provide accurate, data-driven responses based on the information above.
     `.trim();
 
     return context;
@@ -410,36 +500,45 @@ export const DataChat: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="flex-shrink-0 border-t border-zinc-700/50 p-3 bg-zinc-900/90">
-              <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
+            <div className="border-t border-zinc-700/50 p-3 bg-zinc-800/30">
+              {/* Quick Questions (show only when no messages or just welcome message) */}
+              {messages.length <= 1 && processedData && (
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "Summarize this data",
+                      processedData.summary.numericalColumns.length > 0 ? `Analyze ${processedData.summary.numericalColumns[0]}` : null,
+                      "Find patterns",
+                      "Show key insights"
+                    ].filter((q): q is string => Boolean(q)).map((question, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSendMessage(question)}
+                        disabled={isLoading}
+                        className="px-3 py-1.5 text-xs bg-zinc-700/50 hover:bg-zinc-600/50 text-zinc-300 hover:text-zinc-100 rounded-lg transition-colors border border-zinc-600/30 hover:border-zinc-500/50 disabled:opacity-50"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <form onSubmit={handleSubmit} className="flex gap-2">
                 <textarea
                   ref={inputRef}
                   value={input}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about your data..."
+                  placeholder="Ask me anything about your data..."
                   disabled={isLoading}
+                  className="flex-1 resize-none rounded-lg border border-zinc-600/50 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-400 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-50 min-h-[40px] max-h-[120px]"
                   rows={1}
-                  maxLength={1000} // Add a max length
-                  className={cn(
-                    "flex-1 resize-none bg-zinc-700/50 text-zinc-100 placeholder-zinc-400/70 rounded-lg px-3 py-2 pr-10", // Adjusted padding/rounding
-                    "border border-transparent focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500", // Focus state
-                    "disabled:opacity-60 disabled:cursor-not-allowed",
-                    "scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent" // Scrollbar for textarea
-                  )}
-                  style={{ maxHeight: '120px' }} // Control max height
-                  aria-label="Chat input"
                 />
                 <button
                   type="submit"
-                  disabled={isLoading || !input.trim()}
-                  className={cn(
-                    "absolute bottom-1.5 right-1.5 p-1.5 text-zinc-200 rounded-md transition-colors duration-150",
-                    "enabled:bg-indigo-600 enabled:hover:bg-indigo-500",
-                    "disabled:text-zinc-500 disabled:cursor-not-allowed"
-                  )}
-                  title="Send Message"
-                  aria-label="Send Message"
+                  disabled={!input.trim() || isLoading}
+                  className="flex-shrink-0 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -448,9 +547,6 @@ export const DataChat: React.FC = () => {
                   )}
                 </button>
               </form>
-              {/* <div className="mt-1.5 text-xs text-zinc-500 text-center px-2">
-                Shift+Enter for newline.
-              </div> */}
             </div>
           </motion.div>
         )}

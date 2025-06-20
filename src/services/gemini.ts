@@ -20,15 +20,43 @@ export async function getChatCompletion(
     
     console.log('Initializing Gemini API with key');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
-    // Create the prompt with context
-    const trimmedContext = context.length > 500 ? 
-      context.substring(0, 500) + "..." : 
-      context;
+    // Improved context handling - allow more context and smart truncation
+    const maxContextLength = 4000; // Increased from 500 to 4000 characters
+    let processedContext = context;
     
-    const fullPrompt = `You are a data analysis assistant. Analyze this dataset: ${trimmedContext}\n\nUser question: ${prompt}\n\nBe concise and focus on key insights.`;
-    console.log('Prompt prepared, sending to Gemini API');
+    if (context.length > maxContextLength) {
+      // Smart truncation: keep beginning and end, truncate middle if needed
+      const keepStart = Math.floor(maxContextLength * 0.7); // Keep 70% from start
+      const keepEnd = Math.floor(maxContextLength * 0.3); // Keep 30% from end
+      
+      if (keepStart + keepEnd < context.length) {
+        processedContext = context.substring(0, keepStart) + 
+          "\n...(data truncated for brevity)...\n" + 
+          context.substring(context.length - keepEnd);
+      }
+    }
+    
+    // Enhanced prompt structure for better data analysis
+    const fullPrompt = `You are an expert data analyst. You have access to a CSV dataset with the following information:
+
+${processedContext}
+
+Instructions for analysis:
+- Answer questions about the data based on the provided dataset summary and statistics
+- Provide specific insights using the actual column names and values from the data
+- When discussing trends or patterns, reference the statistical information provided
+- If asked about data that isn't in the summary, explain what information is available
+- Use clear, concise language and provide actionable insights
+- Format responses with bullet points or numbered lists when appropriate
+
+User Question: ${prompt}
+
+Please analyze the data and provide a helpful response:`;
+
+    console.log('Enhanced prompt prepared, sending to Gemini API');
+    console.log('Context length:', processedContext.length, 'characters');
     
     // Use streaming API if available
     if (model.generateContentStream) {
@@ -45,8 +73,8 @@ export async function getChatCompletion(
           const words = chunkText.split(' ');
           for (const word of words) {
             onChunk(word + ' ');
-            // Slow down the streaming with longer delay (100-150ms per word)
-            await new Promise(resolve => setTimeout(resolve, 120));
+            // Slightly faster streaming for better UX
+            await new Promise(resolve => setTimeout(resolve, 80));
           }
         }
       }
@@ -67,8 +95,8 @@ export async function getChatCompletion(
       
       for (const chunk of chunks) {
         onChunk(chunk);
-        // Longer delay between chunks for slower effect (100-150ms)
-        await new Promise(resolve => setTimeout(resolve, 120));
+        // Faster simulated streaming
+        await new Promise(resolve => setTimeout(resolve, 80));
       }
       
       onComplete?.();
@@ -86,6 +114,8 @@ export async function getChatCompletion(
         errorMessage = 'Failed to connect to Gemini API. Please check your network connection.';
       } else if (error.message.toLowerCase().includes('api key')) {
         errorMessage = 'API key issue: ' + error.message;
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        errorMessage = 'API quota exceeded. Please check your Gemini API usage limits.';
       }
     }
     
