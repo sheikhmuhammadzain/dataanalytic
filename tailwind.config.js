@@ -11,7 +11,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Geist Sans', 'sans-serif'],
+        sans: ['Geist Sans', 'system-ui', 'sans-serif'],
         mono: ['Geist Mono', 'monospace'],
       },
       colors: {

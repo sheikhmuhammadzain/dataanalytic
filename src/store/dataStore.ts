@@ -23,7 +23,7 @@ interface DataSummary {
   columnStats: Record<string, ColumnStats>;
 }
 
-interface ProcessedData {
+export interface ProcessedData {
   rows: Record<string, string | number | null>[];
   headers: string[];
   summary: DataSummary;

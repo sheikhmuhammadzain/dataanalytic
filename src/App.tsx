@@ -5,13 +5,14 @@ import { DefaultVisualizations } from './components/DefaultVisualizations';
 import { DataTable } from './components/DataTable';
 import { DataChat } from './components/DataChat';
 import { useDataStore } from './store/dataStore';
-import { BarChart2, Table2, Sparkles, ArrowRight, Download, Share2, FileText, Settings, HelpCircle, Calculator } from 'lucide-react';
+import { BarChart2, Table2, Sparkles, ArrowRight, Download, Share2, FileText, Settings, HelpCircle, Calculator, FileDown, Filter } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Menu, MenuItem, HoveredLink } from './components/ui/navbar-menu';
 import { saveAs } from 'file-saver';
 import { DataTransformations } from './components/DataTransformations';
+import { downloadAnalyticsReport, downloadAnalyticsReportHTML } from './services/reportGenerator';
 
 interface PremiumButtonProps {
   children: ReactNode;
@@ -43,6 +44,7 @@ function App() {
   const processedData = useDataStore(state => state.processedData);
   const [active, setActive] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
   const handleScroll = (id: string) => {
     const element = document.getElementById(id);
@@ -78,6 +80,24 @@ function App() {
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
     saveAs(blob, `data-export-${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
+  const handleDownloadAnalyticsReport = async (format: 'txt' | 'html' = 'txt') => {
+    if (!processedData) return;
+    
+    setIsDownloadingReport(true);
+    try {
+      if (format === 'html') {
+        await downloadAnalyticsReportHTML(processedData);
+      } else {
+        await downloadAnalyticsReport(processedData);
+      }
+    } catch (error) {
+      console.error('Failed to download analytics report:', error);
+      alert('Failed to generate analytics report. Please try again.');
+    } finally {
+      setIsDownloadingReport(false);
+    }
   };
 
   if (!processedData) {
@@ -137,11 +157,17 @@ function App() {
                   </HoveredLink>
                 </div>
               </MenuItem>
-              <MenuItem setActive={setActive} active={active} item="Settings">
+              <MenuItem setActive={setActive} active={active} item="Export">
                 <div className="flex flex-col space-y-4 text-sm">
-                  <HoveredLink href="#"><Settings className="w-4 h-4 inline-block mr-2" />Preferences</HoveredLink>
-                  <HoveredLink href="#"><Download className="w-4 h-4 inline-block mr-2" />Export Data</HoveredLink>
-                  <HoveredLink href="#"><Share2 className="w-4 h-4 inline-block mr-2" />Share</HoveredLink>
+                  <HoveredLink onClick={handleDownloadCSV}>
+                    <Download className="w-4 h-4 inline-block mr-2" />Download CSV
+                  </HoveredLink>
+                  <HoveredLink onClick={() => handleDownloadAnalyticsReport('txt')}>
+                    <FileDown className="w-4 h-4 inline-block mr-2" />Insights Report (TXT)
+                  </HoveredLink>
+                  <HoveredLink onClick={() => handleDownloadAnalyticsReport('html')}>
+                    <FileText className="w-4 h-4 inline-block mr-2" />Insights Report (HTML)
+                  </HoveredLink>
                 </div>
               </MenuItem>
               <MenuItem setActive={setActive} active={active} item="Help">
@@ -203,7 +229,7 @@ function App() {
         <div id="analytics-dashboard" className="space-y-8">
           <Card className="relative border-white/[0.2] bg-black/40 backdrop-blur-sm">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="space-y-1">
                   <CardTitle className="text-2xl flex items-center gap-2">
                     Analytics Dashboard
@@ -213,12 +239,36 @@ function App() {
                     Comprehensive analysis and visualization of your data
                   </CardDescription>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <PremiumButton onClick={() => handleScroll('analytics-dashboard')}>
+                    <BarChart2 className="h-4 w-4 mr-2" />
                     View All Charts
                   </PremiumButton>
                   <PremiumButton onClick={() => setShowFilters(prev => !prev)}>
+                    <Settings className="h-4 w-4 mr-2" />
                     Customize View
+                  </PremiumButton>
+                  <PremiumButton 
+                    onClick={() => handleDownloadAnalyticsReport('html')} 
+                    className={`${isDownloadingReport ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isDownloadingReport ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="mr-2"
+                        >
+                          <Download className="h-4 w-4" />
+                        </motion.div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Insights Report
+                      </>
+                    )}
                   </PremiumButton>
                 </div>
               </div>
@@ -238,7 +288,7 @@ function App() {
           <div id="data-preview">
             <Card className="relative border-white/[0.2] bg-black/40 backdrop-blur-sm">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="space-y-1">
                     <CardTitle className="flex items-center gap-2">
                       Data Preview
@@ -248,12 +298,36 @@ function App() {
                       Browse and search through your dataset
                     </CardDescription>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <PremiumButton onClick={() => setShowFilters(prev => !prev)}>
+                      <Filter className="h-4 w-4 mr-2" />
                       Filter Data
                     </PremiumButton>
                     <PremiumButton onClick={handleDownloadCSV}>
+                      <Download className="h-4 w-4 mr-2" />
                       Download CSV
+                    </PremiumButton>
+                    <PremiumButton 
+                      onClick={() => handleDownloadAnalyticsReport('txt')} 
+                      className={`${isDownloadingReport ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isDownloadingReport ? (
+                        <>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="mr-2"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </motion.div>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Insights Report
+                        </>
+                      )}
                     </PremiumButton>
                   </div>
                 </div>

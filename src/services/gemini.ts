@@ -165,4 +165,132 @@ function splitIntoChunks(text: string, maxWords: number): string[] {
   }
   
   return chunks;
+}
+
+export async function generateSyntheticPaintsData(): Promise<Record<string, string | number | null>[]> {
+  try {
+    console.log('Generating synthetic paints company data...');
+    
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('Missing API key. Please check your environment variables.');
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const prompt = `Generate realistic synthetic data for a paints manufacturing company. Create a CSV dataset with at least 50-100 rows and the following columns:
+
+1. Product_ID (string) - Unique identifier like "PAINT-001", "PAINT-002", etc.
+2. Product_Name (string) - Paint product names like "Premium White", "Ocean Blue", etc.
+3. Category (string) - Paint categories like "Interior", "Exterior", "Primer", "Specialty"
+4. Color (string) - Color names like "White", "Blue", "Red", "Green", etc.
+5. Price_Per_Liter (number) - Price in dollars, range $15-80
+6. Stock_Quantity (number) - Number of liters in stock, range 50-2000
+7. Manufacturing_Date (string) - Dates in YYYY-MM-DD format from last 2 years
+8. Supplier (string) - Supplier company names like "ChemCorp", "ColorTech", etc.
+9. Quality_Rating (number) - Rating from 1-5 with decimal precision
+10. Sales_Last_Month (number) - Units sold last month, range 10-500
+11. Region (string) - Geographic regions like "North", "South", "East", "West"
+12. Volume_Size (string) - Container sizes like "1L", "5L", "10L", "20L"
+
+Requirements:
+- Generate exactly 75 rows of data
+- Use realistic paint industry data
+- Make sure numeric values are reasonable for a paint company
+- Include variety in all categorical fields
+- Return ONLY the CSV data with headers, no explanations or markdown formatting
+- Use comma separation
+- No quotes around values unless they contain commas
+
+Example first few rows:
+Product_ID,Product_Name,Category,Color,Price_Per_Liter,Stock_Quantity,Manufacturing_Date,Supplier,Quality_Rating,Sales_Last_Month,Region,Volume_Size
+PAINT-001,Premium White,Interior,White,25.50,450,2024-03-15,ChemCorp,4.2,125,North,5L
+PAINT-002,Ocean Blue,Exterior,Blue,32.75,320,2024-02-28,ColorTech,4.5,89,South,10L
+
+Generate the complete dataset now:`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const csvText = response.text().trim();
+    
+    console.log('Generated CSV data:', csvText.substring(0, 500) + '...');
+    
+    // Parse CSV data into array of objects
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      throw new Error('Generated data does not contain enough rows');
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim());
+    const data: Record<string, string | number | null>[] = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      if (values.length !== headers.length) continue;
+      
+      const row: Record<string, string | number | null> = {};
+      headers.forEach((header, index) => {
+        let value: string | number | null = values[index];
+        
+        // Convert numeric columns to numbers
+        if (header === 'Price_Per_Liter' || header === 'Stock_Quantity' || 
+            header === 'Quality_Rating' || header === 'Sales_Last_Month') {
+          const numValue = parseFloat(value as string);
+          value = isNaN(numValue) ? null : numValue;
+        }
+        
+        row[header] = value;
+      });
+      data.push(row);
+    }
+    
+    console.log(`Successfully generated ${data.length} rows of synthetic paints data`);
+    return data;
+    
+  } catch (error) {
+    console.error("Error generating synthetic data:", error);
+    
+    // Fallback data if AI generation fails
+    console.log('Using fallback synthetic data...');
+    return generateFallbackPaintsData();
+  }
+}
+
+function generateFallbackPaintsData(): Record<string, string | number | null>[] {
+  const categories = ['Interior', 'Exterior', 'Primer', 'Specialty'];
+  const colors = ['White', 'Blue', 'Red', 'Green', 'Yellow', 'Black', 'Gray', 'Brown', 'Pink', 'Purple'];
+  const suppliers = ['ChemCorp', 'ColorTech', 'PaintPro', 'MixMasters', 'ChromaSupply'];
+  const regions = ['North', 'South', 'East', 'West', 'Central'];
+  const volumes = ['1L', '5L', '10L', '20L'];
+  
+  const paintNames = [
+    'Premium White', 'Ocean Blue', 'Forest Green', 'Sunset Red', 'Golden Yellow',
+    'Midnight Black', 'Steel Gray', 'Cream Beige', 'Sky Blue', 'Deep Purple',
+    'Bright Orange', 'Rose Pink', 'Charcoal Gray', 'Lime Green', 'Burgundy Red'
+  ];
+  
+  const data: Record<string, string | number | null>[] = [];
+  
+  for (let i = 1; i <= 75; i++) {
+    const manufactureDate = new Date(2023 + Math.random(), Math.floor(Math.random() * 12), 1 + Math.floor(Math.random() * 28));
+    
+    data.push({
+      Product_ID: `PAINT-${i.toString().padStart(3, '0')}`,
+      Product_Name: paintNames[Math.floor(Math.random() * paintNames.length)],
+      Category: categories[Math.floor(Math.random() * categories.length)],
+      Color: colors[Math.floor(Math.random() * colors.length)],
+      Price_Per_Liter: Math.round((15 + Math.random() * 65) * 100) / 100,
+      Stock_Quantity: Math.floor(50 + Math.random() * 1950),
+      Manufacturing_Date: manufactureDate.toISOString().split('T')[0],
+      Supplier: suppliers[Math.floor(Math.random() * suppliers.length)],
+      Quality_Rating: Math.round((1 + Math.random() * 4) * 10) / 10,
+      Sales_Last_Month: Math.floor(10 + Math.random() * 490),
+      Region: regions[Math.floor(Math.random() * regions.length)],
+      Volume_Size: volumes[Math.floor(Math.random() * volumes.length)]
+    });
+  }
+  
+  return data;
 } 
