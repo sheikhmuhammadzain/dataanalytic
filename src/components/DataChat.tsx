@@ -26,71 +26,81 @@ const formatMessageContent = (content: string) => {
   // Headers (### and ##)
   formattedContent = formattedContent.replace(
     /###\s*(.*?)(?:\n|$)/g,
-    '<h3 class="text-lg font-bold text-white mt-6 mb-3 border-b border-zinc-600/30 pb-2">$1</h3>'
+    '<h3 class="text-lg font-bold text-white mt-4 mb-2 border-b border-zinc-600/30 pb-1 break-words">$1</h3>'
   );
   
   formattedContent = formattedContent.replace(
     /##\s*(.*?)(?:\n|$)/g,
-    '<h2 class="text-xl font-bold text-white mt-6 mb-4">$1</h2>'
+    '<h2 class="text-xl font-bold text-white mt-4 mb-3 break-words">$1</h2>'
   );
 
   // Bold (**text**)
   formattedContent = formattedContent.replace(
     /\*\*(.*?)\*\*/g,
-    '<strong class="font-semibold text-white bg-zinc-700/30 px-1 py-0.5 rounded">$1</strong>'
+    '<strong class="font-semibold text-white bg-zinc-700/30 px-1 py-0.5 rounded break-words">$1</strong>'
   );
 
   // Code blocks (```code```)
   formattedContent = formattedContent.replace(
     /```([\s\S]*?)```/g,
-    '<div class="bg-zinc-800/50 border border-zinc-600/30 rounded-lg p-3 my-3 font-mono text-sm overflow-x-auto"><code class="text-green-300">$1</code></div>'
+    '<div class="bg-zinc-800/50 border border-zinc-600/30 rounded-lg p-3 my-3 font-mono text-sm overflow-x-auto break-all"><code class="text-green-300 whitespace-pre-wrap">$1</code></div>'
   );
 
   // Inline code (`code`)
   formattedContent = formattedContent.replace(
     /`([^`]+)`/g,
-    '<code class="bg-zinc-700/50 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>'
+    '<code class="bg-zinc-700/50 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono break-words">$1</code>'
   );
 
   // Numbered lists (1. item)
   formattedContent = formattedContent.replace(
     /^\s*(\d+)\.\s+(.*)/gm,
-    '<div class="flex items-start gap-3 my-2"><span class="flex-shrink-0 w-6 h-6 bg-indigo-500/20 text-indigo-300 rounded-full flex items-center justify-center text-xs font-semibold">$1</span><span class="text-zinc-200">$2</span></div>'
+    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-6 h-6 bg-indigo-500/20 text-indigo-300 rounded-full flex items-center justify-center text-xs font-semibold mt-0.5">$1</span><span class="text-zinc-200 flex-1 leading-relaxed">$2</span></div>'
   );
 
   // Unordered lists (- item or • item)
   formattedContent = formattedContent.replace(
     /^\s*[-•]\s+(.*)/gm,
-    '<div class="flex items-start gap-3 my-2"><span class="flex-shrink-0 w-2 h-2 bg-indigo-400 rounded-full mt-2"></span><span class="text-zinc-200">$1</span></div>'
+    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-2 h-2 bg-indigo-400 rounded-full mt-2"></span><span class="text-zinc-200 flex-1 leading-relaxed">$1</span></div>'
   );
 
   // Key-value pairs (key: value)
   formattedContent = formattedContent.replace(
     /^\s*([A-Za-z\s]+):\s*([^\n]+)/gm,
-    '<div class="flex gap-2 my-1"><span class="font-medium text-indigo-300 min-w-fit">$1:</span><span class="text-zinc-200">$2</span></div>'
+    '<div class="flex flex-col sm:flex-row gap-1 sm:gap-2 my-1 break-words"><span class="font-medium text-indigo-300 flex-shrink-0">$1:</span><span class="text-zinc-200 flex-1">$2</span></div>'
   );
 
   // Statistics formatting (numbers with %)
   formattedContent = formattedContent.replace(
     /(\d+(?:\.\d+)?%)/g,
-    '<span class="font-semibold text-green-400 bg-green-400/10 px-1 py-0.5 rounded">$1</span>'
+    '<span class="font-semibold text-green-400 bg-green-400/10 px-1 py-0.5 rounded whitespace-nowrap">$1</span>'
   );
 
   // Large numbers formatting
   formattedContent = formattedContent.replace(
     /\b(\d{1,3}(?:,\d{3})+|\d{4,})\b/g,
-    '<span class="font-semibold text-blue-300">$1</span>'
+    '<span class="font-semibold text-blue-300 whitespace-nowrap">$1</span>'
   );
 
   // Newlines to line breaks
   formattedContent = formattedContent.replace(/\n/g, '<br />');
 
-  return (
-    <div 
-      className="prose prose-sm max-w-none leading-relaxed"
-      dangerouslySetInnerHTML={{ __html: formattedContent }} 
-    />
-  );
+  // If formatting fails, return plain text as fallback
+  try {
+    return (
+      <div 
+        className="prose prose-sm max-w-none leading-relaxed break-words overflow-wrap-anywhere"
+        dangerouslySetInnerHTML={{ __html: formattedContent }} 
+      />
+    );
+  } catch (error) {
+    console.error('Error in formatMessageContent:', error);
+    return (
+      <div className="prose prose-sm max-w-none leading-relaxed break-words overflow-wrap-anywhere">
+        {content}
+      </div>
+    );
+  }
 };
 
 // --- Sub-Components ---
@@ -127,6 +137,8 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
   const isUser = message.role === 'user';
   const isError = message.isError;
   const isStreaming = message.isStreaming;
+  
+  console.log('Rendering message:', { id: message.id, content: message.content, isStreaming, isError });
 
   return (
     <motion.div
@@ -139,20 +151,20 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
         stiffness: 300,
         damping: 30
       }}
-      className={cn("flex gap-3 px-4 py-3", isUser ? "justify-end" : "justify-start")}
+      className={cn("flex gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3", isUser ? "justify-end" : "justify-start")}
     >
       {/* Avatar for AI messages */}
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-          <Bot className="w-4 h-4 text-white" />
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+          <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
         </div>
       )}
 
       <div
         className={cn(
-          "relative max-w-[85%] rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-200",
+          "relative w-full max-w-[90%] sm:max-w-[85%] md:max-w-[80%] rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-200 overflow-hidden",
           isUser
-            ? "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white ml-12"
+            ? "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white ml-4 sm:ml-8 md:ml-12"
             : isError
               ? "bg-gradient-to-br from-red-500/20 to-red-600/20 text-red-100 border border-red-500/30"
               : "bg-gradient-to-br from-zinc-800/90 to-zinc-900/90 text-zinc-100 border border-zinc-700/50",
@@ -169,19 +181,21 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
 
         {/* Message content */}
         <div className={cn(
-          "px-4 py-3",
+          "px-3 sm:px-4 py-3 min-w-0 w-full",
           isError && "pt-2"
         )}>
           {message.content ? (
             <div className={cn(
-              "text-sm leading-relaxed",
+              "text-sm leading-relaxed w-full min-w-0 overflow-hidden",
               isUser ? "text-white" : "text-zinc-100"
             )}>
               {formatMessageContent(message.content)}
             </div>
           ) : isStreaming ? (
             <TypingIndicator />
-          ) : null}
+          ) : (
+            <div className="text-zinc-400 italic text-sm">No response content</div>
+          )}
 
           {/* Streaming indicator */}
           {isStreaming && message.content && (
@@ -212,8 +226,8 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
 
       {/* Avatar for user messages */}
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-          <span className="text-white text-sm font-semibold">U</span>
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+          <span className="text-white text-xs sm:text-sm font-semibold">U</span>
         </div>
       )}
     </motion.div>
@@ -251,12 +265,8 @@ export const DataChat: React.FC = () => {
         "Summarize the most important findings from this dataset"
       ].filter(Boolean);
 
-      const welcomeMessage = `Hello! I'm your data analysis assistant. I've analyzed your CSV file with ${summary.rowCount} rows and ${summary.columnCount} columns.
-
-**Here are some questions you can ask me:**
-${suggestedQuestions.slice(0, 4).map(q => `• ${q}`).join('\n')}
-
-Feel free to ask anything about your data - trends, patterns, statistics, or specific insights!`;
+      const welcomeMessage = `Hello! I'm your data analysis assistant. I've analyzed your DataSet.
+      Feel free to ask anything about your data `;
 
       setMessages([
         {
@@ -461,7 +471,9 @@ The user is asking questions about this dataset. Please provide accurate, data-d
         messageContent,
         getDataContext(),
         (chunk) => {
+          console.log('Received chunk:', chunk);
           accumulatedContent += chunk;
+          console.log('Accumulated content:', accumulatedContent);
           setMessages(prev => prev.map(msg =>
             msg.id === botMessageId ? { ...msg, content: accumulatedContent } : msg
           ));
@@ -548,8 +560,8 @@ The user is asking questions about this dataset. Please provide accurate, data-d
               "md:bottom-6 md:right-6 md:rounded-xl", // Adjust positioning and rounding
               "overflow-hidden", // Important for containing content
               isExpanded
-                ? "h-[calc(100svh-3rem)] w-full md:h-[75vh] md:w-[600px]" // Use svh for mobile, more height
-                : "h-[65vh] w-full md:h-[550px] md:w-[400px]" // Adjusted default size
+                ? "h-[calc(100svh-1rem)] w-[calc(100vw-1rem)] md:h-[75vh] md:w-[600px]" // Use almost full screen on mobile
+                : "h-[70vh] w-[calc(100vw-1rem)] md:h-[550px] md:w-[450px]" // More width on mobile
             )}
             style={{
                 boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.3), 0 5px 15px -10px rgba(79, 70, 229, 0.2)', // Softer shadow + accent glow
@@ -568,7 +580,7 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">Data Analyst AI</h3>
-                  <p className="text-xs text-zinc-400">Powered by Cybergen • Online</p>
+                  <p className="text-xs text-zinc-400">Powered by Qubit Dynamics • Online</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

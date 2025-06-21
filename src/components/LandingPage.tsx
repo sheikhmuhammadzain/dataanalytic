@@ -207,14 +207,7 @@ export const LandingPage: React.FC = () => {
               <a href="#features" className={`text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}>Features</a>
               <a href="#how-it-works" className={`text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}>How It Works</a>
               <a href="#visualizations" className={`text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}>Visualizations</a>
-              <a
-                href="https://github.com/yourusername/Data-analytics"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center gap-1 text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}
-              >
-                GitHub <ArrowUpRight className="h-3 w-3" />
-              </a>
+           
               
               <button className={`${getThemeClass('bg-indigo-600 hover:bg-indigo-700 text-white', 'bg-[#0052A5] hover:bg-[#004080] text-white')} px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1`}>
                 Get Started <ArrowRight className="h-3.5 w-3.5" />
