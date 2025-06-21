@@ -29,6 +29,15 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
     --radius: 0.5rem;
+    
+    /* Berger Paint website colors */
+    --berger-blue: 211 100% 32%;        /* #0052A5 */
+    --berger-red: 352 78% 56%;          /* #E63946 */
+    --berger-background: 0 0% 100%;     /* #FFFFFF */
+    --berger-card-bg: 210 17% 98%;      /* #F8F9FA */
+    --berger-text: 0 0% 20%;            /* #333333 */
+    --berger-text-secondary: 0 0% 40%;  /* #666666 */
+    --berger-border: 220 14% 91%;       /* #E5E7EB */
   }
 
   .dark {
@@ -52,6 +61,24 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
   }
+  
+  .light-mode {
+    --background: var(--berger-background);
+    --foreground: var(--berger-text);
+    --card: var(--berger-card-bg);
+    --card-foreground: var(--berger-text);
+    --primary: var(--berger-blue);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--berger-red);
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 14% 96%;
+    --muted-foreground: var(--berger-text-secondary);
+    --accent: 210 20% 98%;
+    --accent-foreground: var(--berger-blue);
+    --border: var(--berger-border);
+    --input: var(--berger-border);
+    --ring: var(--berger-blue);
+  }
 
   html {
     font-family: 'Geist Sans', system-ui, sans-serif;
@@ -65,6 +92,31 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Berger-specific typography for light mode */
+  .light-mode h1 {
+    @apply text-[#0052A5] font-bold;
+  }
+  
+  .light-mode h2 {
+    @apply font-semibold text-[#333333];
+  }
+  
+  .light-mode p {
+    @apply text-[#666666];
+  }
+  
+  .light-mode button.primary {
+    @apply bg-[#0052A5] text-white hover:bg-[#004080] transition-colors;
+  }
+  
+  .light-mode button.secondary {
+    @apply bg-[#E63946] text-white hover:bg-[#d32836] transition-colors;
+  }
+  
+  .light-mode .card {
+    @apply bg-white border border-gray-100 shadow-sm;
   }
 }
 

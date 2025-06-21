@@ -8,9 +8,24 @@
   z-index: -1;
 }
 
+/* Light mode sunray with Berger colors */
+.light-mode .sunray-beam {
+  background: radial-gradient(ellipse at left, rgba(0, 82, 165, 0.1), transparent 70%);
+}
+
 @media (max-width: 768px) {
   .sunray-beam {
     width: 80%;
     opacity: 0.1;
   }
+}
+
+/* Berger Paints light mode styling */
+.light-mode {
+  --berger-blue: #0052A5;
+  --berger-red: #E63946;
+  --berger-text: #333333;
+  --berger-text-secondary: #666666;
+  --berger-light-bg: #FFFFFF;
+  --berger-section-bg: #F8F9FA;
 }

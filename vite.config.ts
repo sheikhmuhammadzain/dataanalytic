@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     optimizeDeps: {
-      exclude: ['lucide-react'],
+      exclude: [],
     },
     server: {
       port: 5173,
@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             vendor: ['react', 'react-dom'],
             charts: ['recharts', 'react-plotly.js', 'plotly.js-dist-min'],
+            'lucide-icons': ['lucide-react'],
           },
           // Ensure proper MIME types for JS files
           entryFileNames: 'assets/[name]-[hash].js',

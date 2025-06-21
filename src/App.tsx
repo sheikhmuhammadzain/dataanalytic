@@ -27,16 +27,16 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
 }) => (
   <button 
     onClick={onClick}
-    className={`bg-slate-800 no-underline group cursor-pointer relative shadow-2xl shadow-zinc-900 rounded-full p-px text-xs font-semibold leading-6 text-white inline-block ${className}`}
+    className={`bg-gray-100 hover:bg-gray-200 no-underline group cursor-pointer relative shadow-sm border border-gray-200 rounded-full p-px text-xs font-semibold leading-6 text-gray-700 inline-block transition-all duration-300 ${className}`}
   >
     <span className="absolute inset-0 overflow-hidden rounded-full">
-      <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(56,189,248,0.6)_0%,rgba(56,189,248,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(59,130,246,0.1)_0%,rgba(59,130,246,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
     </span>
-    <div className="relative flex space-x-2 items-center z-10 rounded-full bg-zinc-950 py-0.5 px-4 ring-1 ring-white/10">
-      <span>{children}</span>
-      <ArrowRight className="h-4 w-4" />
+    <div className="relative flex space-x-2 items-center z-10 rounded-full bg-white py-0.5 px-4 ring-1 ring-gray-200 group-hover:ring-blue-300">
+      <span className="text-gray-700 group-hover:text-blue-700">{children}</span>
+      <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
     </div>
-    <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-emerald-400/0 via-emerald-400/90 to-emerald-400/0 transition-opacity duration-500 group-hover:opacity-40" />
+    <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-blue-400/0 via-blue-400/50 to-blue-400/0 transition-opacity duration-500 group-hover:opacity-40" />
   </button>
 );
 
@@ -105,17 +105,17 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0118] relative">
-      {/* Gradient Background */}
+    <div className="min-h-screen bg-white relative">
+      {/* Light Gradient Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-        <div className="absolute top-0 -left-4 w-[500px] h-[500px] bg-purple-500/30 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-        <div className="absolute top-0 -right-4 w-[500px] h-[500px] bg-indigo-500/30 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-8 left-20 w-[500px] h-[500px] bg-pink-500/30 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+        <div className="absolute top-0 -left-4 w-[500px] h-[500px] bg-blue-200/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
+        <div className="absolute top-0 -right-4 w-[500px] h-[500px] bg-indigo-200/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-8 left-20 w-[500px] h-[500px] bg-purple-200/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.2] bg-black/50 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-xl shadow-sm">
         <nav className="container flex h-16 items-center justify-between">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
@@ -134,10 +134,10 @@ function App() {
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/50 to-purple-500/50 rounded-full blur opacity-40 group-hover:opacity-75 transition" />
-                <BarChart2 className="h-6 w-6 relative text-white/90" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/30 to-indigo-500/30 rounded-full blur opacity-40 group-hover:opacity-75 transition" />
+                <BarChart2 className="h-6 w-6 relative text-gray-800" />
               </div>
-              <h1 className="font-bold text-xl text-white/90">
+              <h1 className="font-bold text-xl text-gray-800">
                 DataAnalytics
               </h1>
             </button>
@@ -192,7 +192,7 @@ function App() {
       </header>
 
       {/* Hero Section */}
-      <div id="data-overview" className="relative border-b border-white/[0.2] bg-black/40 backdrop-blur-sm">
+      <div id="data-overview" className="relative border-b border-gray-200 bg-gray-50/50 backdrop-blur-sm">
         <div className="container relative py-12">
           <DataSummary />
         </div>
@@ -200,13 +200,13 @@ function App() {
 
       <main className="container py-8 space-y-8">
         {/* Data Manipulation Section */}
-        <Card className="relative border-white/[0.2] bg-black/40 backdrop-blur-sm">
+        <Card className="relative border-gray-200 bg-white shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-2xl flex items-center gap-2">
+                <CardTitle className="text-2xl flex items-center gap-2 text-gray-900">
                   Data Transformations
-                  <Calculator className="h-5 w-5 text-indigo-400" />
+                  <Calculator className="h-5 w-5 text-blue-600" />
                 </CardTitle>
                 <CardDescription>
                   Transform and manipulate your data with powerful tools
@@ -227,13 +227,13 @@ function App() {
 
         {/* Analytics Dashboard */}
         <div id="analytics-dashboard" className="space-y-8">
-          <Card className="relative border-white/[0.2] bg-black/40 backdrop-blur-sm">
+          <Card className="relative border-gray-200 bg-white shadow-sm">
             <CardHeader>
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="space-y-1">
-                  <CardTitle className="text-2xl flex items-center gap-2">
+                  <CardTitle className="text-2xl flex items-center gap-2 text-gray-900">
                     Analytics Dashboard
-                    <Sparkles className="h-5 w-5 text-indigo-400" />
+                    <Sparkles className="h-5 w-5 text-blue-600" />
                   </CardTitle>
                   <CardDescription>
                     Comprehensive analysis and visualization of your data
@@ -241,12 +241,12 @@ function App() {
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <PremiumButton onClick={() => handleScroll('analytics-dashboard')}>
-                    <BarChart2 className="h-4 w-4 mr-2" />
-                    View All Charts
+                    <BarChart2 className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
+                    <span className="text-gray-700 group-hover:text-blue-700">View All Charts</span>
                   </PremiumButton>
                   <PremiumButton onClick={() => setShowFilters(prev => !prev)}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Customize View
+                    <Settings className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
+                    <span className="text-gray-700 group-hover:text-blue-700">Customize View</span>
                   </PremiumButton>
                   <PremiumButton 
                     onClick={() => handleDownloadAnalyticsReport('html')} 
@@ -259,14 +259,14 @@ function App() {
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                           className="mr-2"
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="h-4 w-4 text-gray-500" />
                         </motion.div>
-                        Generating...
+                        <span className="text-gray-700">Generating...</span>
                       </>
                     ) : (
                       <>
-                        <FileDown className="h-4 w-4 mr-2" />
-                        Insights Report
+                        <FileDown className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
+                        <span className="text-gray-700 group-hover:text-blue-700">Insights Report</span>
                       </>
                     )}
                   </PremiumButton>
@@ -286,13 +286,13 @@ function App() {
 
           {/* Data Preview Section */}
           <div id="data-preview">
-            <Card className="relative border-white/[0.2] bg-black/40 backdrop-blur-sm">
+            <Card className="relative border-gray-200 bg-white shadow-sm">
               <CardHeader>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-gray-900">
                       Data Preview
-                      <Table2 className="h-5 w-5 text-indigo-400" />
+                      <Table2 className="h-5 w-5 text-blue-600" />
                     </CardTitle>
                     <CardDescription>
                       Browse and search through your dataset
@@ -300,12 +300,12 @@ function App() {
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <PremiumButton onClick={() => setShowFilters(prev => !prev)}>
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter Data
+                      <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
+                      <span className="text-gray-700 group-hover:text-blue-700">Filter Data</span>
                     </PremiumButton>
                     <PremiumButton onClick={handleDownloadCSV}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download CSV
+                      <Download className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
+                      <span className="text-gray-700 group-hover:text-blue-700">Download CSV</span>
                     </PremiumButton>
                     <PremiumButton 
                       onClick={() => handleDownloadAnalyticsReport('txt')} 
@@ -318,14 +318,14 @@ function App() {
                             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                             className="mr-2"
                           >
-                            <FileText className="h-4 w-4" />
+                            <FileText className="h-4 w-4 text-gray-500" />
                           </motion.div>
-                          Generating...
+                          <span className="text-gray-700">Generating...</span>
                         </>
                       ) : (
                         <>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Insights Report
+                          <FileText className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
+                          <span className="text-gray-700 group-hover:text-blue-700">Insights Report</span>
                         </>
                       )}
                     </PremiumButton>
@@ -343,16 +343,16 @@ function App() {
       {/* Floating Chat Button */}
       <DataChat />
 
-      <footer className="border-t border-white/[0.2] py-6 bg-black/40 backdrop-blur-sm mt-8">
+      <footer className="border-t border-gray-200 py-6 bg-gray-50 mt-8">
         <div className="container">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-gray-600">
               © 2024 DataAnalytics. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
-              <a href="#" className="text-sm text-white/50 hover:text-white/80 transition-colors">Privacy Policy</a>
-              <a href="#" className="text-sm text-white/50 hover:text-white/80 transition-colors">Terms of Service</a>
-              <a href="#" className="text-sm text-white/50 hover:text-white/80 transition-colors">Documentation</a>
+              <a href="#" className="text-sm text-gray-600 hover:text-gray-800 transition-colors">Privacy Policy</a>
+              <a href="#" className="text-sm text-gray-600 hover:text-gray-800 transition-colors">Terms of Service</a>
+              <a href="#" className="text-sm text-gray-600 hover:text-gray-800 transition-colors">Documentation</a>
             </div>
           </div>
         </div>

@@ -19,15 +19,15 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
   <button 
     onClick={onClick}
     disabled={disabled}
-    className={`bg-slate-800 no-underline group cursor-pointer relative shadow-2xl shadow-zinc-900 rounded-full p-px text-xs font-semibold leading-6 text-white inline-block disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    className={`bg-gray-100 hover:bg-gray-200 no-underline group cursor-pointer relative shadow-sm border border-gray-200 rounded-full p-px text-xs font-semibold leading-6 text-gray-700 inline-block transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
   >
     <span className="absolute inset-0 overflow-hidden rounded-full">
-      <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(56,189,248,0.6)_0%,rgba(56,189,248,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(59,130,246,0.1)_0%,rgba(59,130,246,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
     </span>
-    <div className="relative flex space-x-2 items-center z-10 rounded-full bg-zinc-950 py-0.5 px-4 ring-1 ring-white/10">
+    <div className="relative flex space-x-2 items-center z-10 rounded-full bg-white py-0.5 px-4 ring-1 ring-gray-200 group-hover:ring-blue-300">
       {children}
     </div>
-    <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-emerald-400/0 via-emerald-400/90 to-emerald-400/0 transition-opacity duration-500 group-hover:opacity-40" />
+    <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-blue-400/0 via-blue-400/50 to-blue-400/0 transition-opacity duration-500 group-hover:opacity-40" />
   </button>
 );
 
@@ -140,19 +140,19 @@ export const DataTable: React.FC<DataTableProps> = ({ showFilters }) => {
           className="flex flex-wrap items-center gap-4 mb-6"
         >
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Search in data..."
-              className="w-full pl-10 pr-4 py-2 bg-white/5 border border-indigo-500/20 rounded-lg text-white/90 placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <select
             value={selectedColumn}
             onChange={(e) => setSelectedColumn(e.target.value)}
-            className="bg-white/5 border border-indigo-500/20 rounded-lg text-white/90 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="bg-white border border-gray-300 rounded-lg text-gray-900 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">All Columns</option>
             {processedData.headers.map(header => (
@@ -162,37 +162,37 @@ export const DataTable: React.FC<DataTableProps> = ({ showFilters }) => {
         </motion.div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-white/[0.2] bg-black/40 backdrop-blur-sm">
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           {processedData.rows.length > 0 ? (
-            <table className="w-full min-w-full divide-y divide-white/[0.2]">
-              <thead className="bg-white/5">
+            <table className="w-full min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
                   {processedData.headers.map((header, index) => (
                     <th
                       key={index}
                       onClick={() => handleSort(header)}
-                      className="px-6 py-4 text-left text-sm font-semibold text-white/90 whitespace-nowrap cursor-pointer hover:bg-white/5 transition-colors group"
+                      className="px-6 py-4 text-left text-sm font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors group"
                     >
                       <div className="flex items-center gap-2">
                         {header}
-                        <ArrowUpDown className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <ArrowUpDown className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.2]">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedData.length > 0 ? (
                   paginatedData.map((row, rowIndex) => (
                     <tr 
                       key={rowIndex}
-                      className="hover:bg-white/5 transition-colors"
+                      className="hover:bg-gray-50 transition-colors"
                     >
                       {processedData.headers.map((header, colIndex) => (
                         <td
                           key={`${rowIndex}-${colIndex}`}
-                          className="px-6 py-4 text-sm text-white/70 whitespace-nowrap"
+                          className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap"
                         >
                           {row[header] === null || row[header] === undefined ? '-' : String(row[header])}
                         </td>
@@ -206,10 +206,10 @@ export const DataTable: React.FC<DataTableProps> = ({ showFilters }) => {
                       className="px-6 py-8 text-center"
                     >
                       <div className="flex flex-col items-center justify-center gap-3 py-6">
-                        <Search className="h-8 w-8 text-white/20" />
+                        <Search className="h-8 w-8 text-gray-300" />
                         <div className="space-y-1">
-                          <h4 className="text-base font-medium text-white/90">No matching results</h4>
-                          <p className="text-xs text-white/50">
+                          <h4 className="text-base font-medium text-gray-900">No matching results</h4>
+                          <p className="text-xs text-gray-500">
                             Try adjusting your search terms or filters to find what you're looking for
                           </p>
                         </div>
@@ -222,10 +222,10 @@ export const DataTable: React.FC<DataTableProps> = ({ showFilters }) => {
           ) : (
             <div className="px-6 py-12 text-center">
               <div className="flex flex-col items-center justify-center gap-4">
-                <Search className="h-12 w-12 text-white/20" />
+                <Search className="h-12 w-12 text-gray-300" />
                 <div className="space-y-2">
-                  <h3 className="text-lg font-medium text-white/90">No data available</h3>
-                  <p className="text-sm text-white/50 max-w-md mx-auto">
+                  <h3 className="text-lg font-medium text-gray-900">No data available</h3>
+                  <p className="text-sm text-gray-500 max-w-md mx-auto">
                     Upload a CSV file using the upload button in the navigation bar to see your data displayed here.
                   </p>
                 </div>
@@ -238,7 +238,7 @@ export const DataTable: React.FC<DataTableProps> = ({ showFilters }) => {
       {/* Pagination */}
       {filteredData.length > 0 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-gray-500">
             Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, filteredData.length)} of {filteredData.length} entries
           </p>
           <div className="flex items-center gap-2">
@@ -246,18 +246,18 @@ export const DataTable: React.FC<DataTableProps> = ({ showFilters }) => {
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
+              <ChevronLeft className="h-4 w-4 mr-1 text-gray-500 group-hover:text-blue-600" />
+              <span className="text-gray-700 group-hover:text-blue-700">Previous</span>
             </PremiumButton>
-            <span className="text-white/70 text-sm px-4">
+            <span className="text-gray-600 text-sm px-4">
               Page {currentPage} of {totalPages || 1}
             </span>
             <PremiumButton
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage >= totalPages}
             >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <span className="text-gray-700 group-hover:text-blue-700">Next</span>
+              <ChevronRight className="h-4 w-4 ml-1 text-gray-500 group-hover:text-blue-600" />
             </PremiumButton>
           </div>
         </div>
