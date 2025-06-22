@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, Tooltip, Legend } from 'recharts';
 
 interface PremiumButtonProps {
   children: React.ReactNode;
@@ -77,15 +78,16 @@ const KPICard: React.FC<KPICardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
+      className="h-full"
     >
-      <Card className="border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+      <Card className="border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-gray-700">{label}</CardTitle>
           <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
             <Icon className="h-4 w-4" />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 flex flex-col justify-between">
           <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
           {change !== undefined && (
             <div className="flex items-center space-x-1">
@@ -333,7 +335,6 @@ export const DataSummary: React.FC = () => {
       value: businessInsights.revenueColumn ? `PKR ${businessInsights.totalRevenue.toLocaleString('en-PK')}` : 'No revenue data',
       change: businessInsights.growthRate,
       changeType: businessInsights.growthRate > 0 ? 'positive' : 'negative',
-      subtitle: businessInsights.revenueColumn ? `From ${businessInsights.revenueColumn}` : 'Revenue column not found',
       delay: 0.1,
       color: 'green'
     },
@@ -345,7 +346,6 @@ export const DataSummary: React.FC = () => {
         'No units data',
       change: 12.3,
       changeType: 'positive',
-      subtitle: businessInsights.unitsColumn ? `From ${businessInsights.unitsColumn}` : 'Units column not found',
       delay: 0.2,
       color: 'blue'
     },
@@ -355,7 +355,6 @@ export const DataSummary: React.FC = () => {
       value: businessInsights.customerCount.toLocaleString(),
       change: 8.1,
       changeType: 'positive',
-      subtitle: businessInsights.customerColumn ? `From ${businessInsights.customerColumn}` : 'Customer data estimated',
       delay: 0.3,
       color: 'purple'
     },
@@ -365,7 +364,6 @@ export const DataSummary: React.FC = () => {
       value: businessInsights.revenueColumn ? `PKR ${businessInsights.avgOrderValue.toLocaleString('en-PK', { maximumFractionDigits: 0 })}` : 'N/A',
       change: 1.2,
       changeType: 'positive',
-      subtitle: businessInsights.revenueColumn ? 'Per transaction' : 'Revenue data needed',
       delay: 0.4,
       color: 'orange'
     }
@@ -427,101 +425,238 @@ export const DataSummary: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <PremiumButton onClick={() => console.log('Navigate to detailed analytics')}>
+          <button 
+            onClick={() => console.log('Navigate to detailed analytics')}
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200"
+          >
             <BarChart3 className="h-4 w-4 mr-2" />
             View Detailed Analytics
-          </PremiumButton>
+          </button>
         </div>
       </motion.div>
 
-      {/* Key Performance Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi, index) => (
-          <KPICard key={index} {...kpi} />
-        ))}
-      </div>
+      {/* Main Layout with Sidebar */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        {/* Main Content Area */}
+        <div className="xl:col-span-3 space-y-8">
+          {/* Key Performance Indicators */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
+            {kpis.map((kpi, index) => (
+              <KPICard key={index} {...kpi} />
+            ))}
+          </div>
 
-      {/* Business Insights & Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Quick Insights */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card className="border-gray-200 bg-white shadow-sm">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-gray-900">AI Insights</CardTitle>
-              </div>
-              <CardDescription>Real-time recommendations for your business</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {insights.map((insight, index) => (
-                  <InsightCard key={index} {...insight} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Performance Metrics */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <Card className="border-gray-200 bg-white shadow-sm">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <PieChart className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-gray-900">Performance Metrics</CardTitle>
-              </div>
-              <CardDescription>Key business indicators at a glance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Best Performing Product */}
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Top Product</h4>
-                    <p className="text-green-700 font-medium">{businessInsights.bestProduct}</p>
-                    <p className="text-sm text-green-600">Leading in sales volume</p>
+          {/* Chart Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Sales Performance Trend */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card className="border-gray-200 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-gray-900">Sales Performance Trend</CardTitle>
+                  <CardDescription>Monthly sales vs targets (in Crores)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={[
+                          { month: 'Jan', actual: 3.2, target: 3.5 },
+                          { month: 'Feb', actual: 3.8, target: 3.5 },
+                          { month: 'Mar', actual: 4.1, target: 3.5 },
+                          { month: 'Apr', actual: 4.4, target: 3.5 },
+                          { month: 'May', actual: 4.6, target: 3.5 },
+                          { month: 'Jun', actual: 5.1, target: 3.5 }
+                        ]}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="month" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            fontSize: '12px'
+                          }}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="actual" 
+                          stroke="#dc2626" 
+                          strokeWidth={2}
+                          dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
+                          name="Actual Sales"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="target" 
+                          stroke="#2563eb" 
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+                          name="Target"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div className="text-right">
-                    <TrendingUp className="h-8 w-8 text-green-600" />
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Quarterly Performance */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <Card className="border-gray-200 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-gray-900">Quarterly Performance</CardTitle>
+                  <CardDescription>Sales by quarter (in Crores)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { quarter: 'Q1 2024', sales: 11.1 },
+                          { quarter: 'Q2 2024', sales: 14.1 },
+                          { quarter: 'Q3 2023', sales: 8.9 },
+                          { quarter: 'Q4 2023', sales: 10.5 }
+                        ]}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="quarter" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            fontSize: '12px'
+                          }}
+                        />
+                        <Bar 
+                          dataKey="sales" 
+                          fill="#3b82f6"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Performance Metrics */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Card className="border-gray-200 bg-white shadow-sm">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <PieChart className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-gray-900">Performance Metrics</CardTitle>
+                </div>
+                <CardDescription>Key business indicators at a glance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Best Performing Product */}
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Top Product</h4>
+                      <p className="text-green-700 font-medium">{businessInsights.bestProduct}</p>
+                      <p className="text-sm text-green-600">Leading in sales volume</p>
+                    </div>
+                    <div className="text-right">
+                      <TrendingUp className="h-8 w-8 text-green-600" />
+                    </div>
+                  </div>
+
+                  {/* Best Region */}
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Top Region</h4>
+                      <p className="text-blue-700 font-medium">{businessInsights.bestRegion}</p>
+                      <p className="text-sm text-blue-600">Highest revenue contribution</p>
+                    </div>
+                    <div className="text-right">
+                      <MapPin className="h-8 w-8 text-blue-600" />
+                    </div>
+                  </div>
+
+                  {/* Customer Satisfaction */}
+                  <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Customer Satisfaction</h4>
+                      <p className="text-purple-700 font-medium">{businessInsights.customerSatisfaction}/5.0</p>
+                      <p className="text-sm text-purple-600">Based on recent feedback</p>
+                    </div>
+                    <div className="text-right">
+                      <Users className="h-8 w-8 text-purple-600" />
+                    </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
 
-                {/* Best Region */}
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Top Region</h4>
-                    <p className="text-blue-700 font-medium">{businessInsights.bestRegion}</p>
-                    <p className="text-sm text-blue-600">Highest revenue contribution</p>
-                  </div>
-                  <div className="text-right">
-                    <MapPin className="h-8 w-8 text-blue-600" />
-                  </div>
+        {/* AI Insights Sidebar */}
+        <div className="xl:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="sticky top-8"
+          >
+            <Card className="border-gray-200 bg-white shadow-sm">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-gray-900">AI Insights</CardTitle>
                 </div>
-
-                {/* Customer Satisfaction */}
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Customer Satisfaction</h4>
-                    <p className="text-purple-700 font-medium">{businessInsights.customerSatisfaction}/5.0</p>
-                    <p className="text-sm text-purple-600">Based on recent feedback</p>
-                  </div>
-                  <div className="text-right">
-                    <Users className="h-8 w-8 text-purple-600" />
-                  </div>
+                <CardDescription>Real-time recommendations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {insights.map((insight, index) => (
+                    <InsightCard key={index} {...insight} />
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

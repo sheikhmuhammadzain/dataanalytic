@@ -337,25 +337,35 @@ export async function generateChartExplanation(params: {
     const dataContext = JSON.stringify(params.chartData, null, 2);
     const insightsContext = params.insights ? JSON.stringify(params.insights, null, 2) : 'No insights available';
     
-    const prompt = `Explain this data visualization in simple, business-friendly terms:
+    const prompt = `As a business consultant, provide a concise explanation of this chart focused on actionable business insights:
 
 Chart Type: ${params.chartType}
 Data Fields: ${JSON.stringify(params.dataKeys)}
 Sample Data (first 5 rows):
 ${dataContext}
 
-Additional Insights:
+Additional Context:
 ${insightsContext}
 
 Total Data Points: ${params.dataSize}
 
-Please provide a clear, concise explanation that covers:
-1. What this chart shows
-2. Key patterns or insights visible in the data
-3. What business decisions this chart could help with
-4. Any notable trends or outliers
+**Instructions:**
+- Keep response under 120 words maximum
+- Focus ONLY on business benefits and actionable insights
+- Use bullet points for key findings (max 3 bullets)
+- Avoid technical jargon
+- Lead with the most important business impact
+- End with 1 specific recommended action
 
-Keep it under 200 words and use simple language that any business user would understand.`;
+**Format:**
+**Business Impact:** [One sentence about main business value]
+
+**Key Insights:**
+• [Most important finding for revenue/profit]
+• [Second key pattern for operations]
+• [Third insight for decision-making]
+
+**Recommended Action:** [One specific next step]`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

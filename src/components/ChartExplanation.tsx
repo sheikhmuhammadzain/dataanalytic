@@ -45,7 +45,7 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
           setExplanation(aiExplanation);
         } catch (error) {
           console.error('Error generating explanation:', error);
-          setExplanation('Unable to generate explanation at this time. This chart visualizes your data to help identify patterns and insights.');
+          setExplanation('**Business Impact:** Unable to generate insights at this time.\n\n**Key Insights:**\n• This chart visualizes your data patterns\n• Review the data for trends and opportunities\n• Consider data quality and completeness\n\n**Recommended Action:** Ensure data quality and try again later.');
         } finally {
           setIsLoading(false);
         }
@@ -72,14 +72,52 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
         
         const uniqueKey = `${sectionIndex}-${lineIndex}`;
         
-        // Main section headings with ** **
+        // Business Impact section - special styling
+        if (trimmedLine.match(/^\*\*Business Impact\*\*:?\s*/)) {
+          const content = trimmedLine.replace(/^\*\*Business Impact\*\*:?\s*/, '');
+          formattedContent.push(
+            <div key={uniqueKey} className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <h4 className="text-sm font-semibold text-blue-900 uppercase tracking-wide">
+                  Business Impact
+                </h4>
+              </div>
+              <p className="text-blue-800 font-medium leading-relaxed">
+                {content}
+              </p>
+            </div>
+          );
+          return;
+        }
+        
+        // Recommended Action section - special styling
+        if (trimmedLine.match(/^\*\*Recommended Action\*\*:?\s*/)) {
+          const content = trimmedLine.replace(/^\*\*Recommended Action\*\*:?\s*/, '');
+          formattedContent.push(
+            <div key={uniqueKey} className="mt-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <h4 className="text-sm font-semibold text-green-900 uppercase tracking-wide">
+                  Next Step
+                </h4>
+              </div>
+              <p className="text-green-800 font-medium leading-relaxed">
+                {content}
+              </p>
+            </div>
+          );
+          return;
+        }
+        
+        // Other section headings with ** **
         if (trimmedLine.match(/^\*\*[^*]+\*\*:?\s*$/)) {
           const heading = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '');
           formattedContent.push(
-            <div key={uniqueKey} className="mt-6 mb-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <h4 className="text-base font-semibold text-gray-900">
+            <div key={uniqueKey} className="mt-5 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
                   {heading}
                 </h4>
               </div>
@@ -88,15 +126,15 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
           return;
         }
         
-        // Numbered or bullet points
-        if (trimmedLine.match(/^\d+\.\s/) || trimmedLine.match(/^[•\*\-]\s/)) {
-          const content = trimmedLine.replace(/^(\d+\.\s|[•\*\-]\s)/, '');
+        // Bullet points with enhanced styling
+        if (trimmedLine.match(/^[•\*\-]\s/)) {
+          const content = trimmedLine.replace(/^[•\*\-]\s/, '');
           const processedContent = processInlineFormatting(content);
           
           formattedContent.push(
-            <div key={uniqueKey} className="flex items-start gap-3 mb-3 ml-4">
-              <span className="text-blue-500 mt-1.5 text-xs">●</span>
-              <div className="text-gray-700 leading-relaxed flex-1">
+            <div key={uniqueKey} className="flex items-start gap-3 mb-2 ml-3">
+              <span className="text-orange-500 mt-1.5 text-xs font-bold">●</span>
+              <div className="text-gray-700 leading-relaxed flex-1 text-sm">
                 {processedContent}
               </div>
             </div>
@@ -104,11 +142,11 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
           return;
         }
         
-        // Paragraphs with potential inline formatting
-        if (trimmedLine.length > 0) {
+        // Regular paragraphs
+        if (trimmedLine.length > 0 && !trimmedLine.startsWith('**')) {
           const processedContent = processInlineFormatting(trimmedLine);
           formattedContent.push(
-            <p key={uniqueKey} className="text-gray-700 leading-relaxed mb-4">
+            <p key={uniqueKey} className="text-gray-700 leading-relaxed mb-3 text-sm">
               {processedContent}
             </p>
           );
@@ -144,7 +182,7 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
       <button
         onClick={handleExplain}
         className="absolute top-3 right-3 z-10 p-1.5 rounded-md bg-white border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md"
-        title="Explain this chart"
+        title="Get business insights"
       >
         <HelpCircle className="w-4 h-4" />
       </button>
@@ -175,7 +213,7 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                   <h3 className="text-lg font-medium text-gray-900">
-                    Chart Explanation
+                    Business Insights
                   </h3>
                   <button
                     onClick={() => setIsOpen(false)}
@@ -191,38 +229,13 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
                     <div className="flex flex-col items-center justify-center py-12">
                       <Loader2 className="w-6 h-6 animate-spin text-gray-400 mb-3" />
                       <span className="text-sm text-gray-600">
-                        Analyzing your chart...
+                        Generating business insights...
                       </span>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <div className="prose prose-sm max-w-none">
                         {formatExplanation(explanation)}
-                      </div>
-                      
-                      {/* Chart Context */}
-                      <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">
-                          Chart Details
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2 text-xs text-gray-600">
-                          <div className="flex justify-between">
-                            <span>Type:</span>
-                            <span className="font-mono">{chartType}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Data Points:</span>
-                            <span className="font-mono">{chartData.length.toLocaleString()}</span>
-                          </div>
-                          {Object.entries(dataKeys).map(([key, value]) => 
-                            value ? (
-                              <div key={key} className="flex justify-between">
-                                <span>{key.replace(/([A-Z])/g, ' $1').toLowerCase()}:</span>
-                                <span className="font-mono text-right">{String(value).replace(/_/g, ' ')}</span>
-                              </div>
-                            ) : null
-                          )}
-                        </div>
                       </div>
                     </div>
                   )}
