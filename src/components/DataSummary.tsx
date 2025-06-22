@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { 
   TrendingUp, 
@@ -16,7 +16,8 @@ import {
   Palette,
   BarChart3,
   PieChart,
-  Activity
+  Activity,
+  ChevronDown as DropdownIcon
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -167,6 +168,7 @@ const InsightCard: React.FC<InsightCardProps> = ({
 
 export const DataSummary: React.FC = () => {
   const processedData = useDataStore(state => state.processedData);
+  const [selectedProvince, setSelectedProvince] = useState('Punjab');
 
   // Calculate business insights from the data
   const businessInsights = useMemo(() => {
@@ -325,6 +327,37 @@ export const DataSummary: React.FC = () => {
       customerColumn
     };
   }, [processedData]);
+
+  // Quarterly performance data by province
+  const quarterlyDataByProvince = {
+    'Punjab': [
+      { quarter: 'Q1 2024', sales: 11.1 },
+      { quarter: 'Q2 2024', sales: 14.1 },
+      { quarter: 'Q3 2023', sales: 8.9 },
+      { quarter: 'Q4 2023', sales: 10.5 }
+    ],
+    'Sindh': [
+      { quarter: 'Q1 2024', sales: 13.2 },
+      { quarter: 'Q2 2024', sales: 15.8 },
+      { quarter: 'Q3 2023', sales: 12.1 },
+      { quarter: 'Q4 2023', sales: 14.3 }
+    ],
+    'KPK': [
+      { quarter: 'Q1 2024', sales: 8.7 },
+      { quarter: 'Q2 2024', sales: 9.5 },
+      { quarter: 'Q3 2023', sales: 7.2 },
+      { quarter: 'Q4 2023', sales: 8.1 }
+    ],
+    'Balochistan': [
+      { quarter: 'Q1 2024', sales: 5.4 },
+      { quarter: 'Q2 2024', sales: 6.2 },
+      { quarter: 'Q3 2023', sales: 4.8 },
+      { quarter: 'Q4 2023', sales: 5.1 }
+    ]
+  };
+
+  const provinces = Object.keys(quarterlyDataByProvince);
+  const currentQuarterlyData = quarterlyDataByProvince[selectedProvince as keyof typeof quarterlyDataByProvince];
 
   if (!processedData || !businessInsights) return null;
 
@@ -526,19 +559,32 @@ export const DataSummary: React.FC = () => {
             >
               <Card className="border-gray-200 bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-gray-900">Quarterly Performance</CardTitle>
-                  <CardDescription>Sales by quarter (in Crores)</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-gray-900">Quarterly Performance</CardTitle>
+                      <CardDescription>Sales by quarter (in Crores)</CardDescription>
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={selectedProvince}
+                        onChange={(e) => setSelectedProvince(e.target.value)}
+                        className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {provinces.map((province) => (
+                          <option key={province} value={province}>
+                            {province}
+                          </option>
+                        ))}
+                      </select>
+                      <DropdownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={[
-                          { quarter: 'Q1 2024', sales: 11.1 },
-                          { quarter: 'Q2 2024', sales: 14.1 },
-                          { quarter: 'Q3 2023', sales: 8.9 },
-                          { quarter: 'Q4 2023', sales: 10.5 }
-                        ]}
+                        data={currentQuarterlyData}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
