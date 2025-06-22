@@ -5,6 +5,8 @@ import { ChartLineLabelCustom } from './charts/ChartLineLabelCustom';
 import { ChartPieLabelList } from './charts/ChartPieLabelList';
 import { ChartRadialLabel } from './charts/ChartRadialLabel';
 import { ChartTooltipAdvanced } from './charts/ChartTooltipAdvanced';
+import { ChartBoxPlot } from './charts/ChartBoxPlot';
+import { ChartScatterPlot } from './charts/ChartScatterPlot';
 
 interface DefaultVisualizationsProps {
   showFilters: boolean;
@@ -13,15 +15,37 @@ interface DefaultVisualizationsProps {
 export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ showFilters }) => {
   return (
     <div className="space-y-6">
-      {/* Responsive grid of modular charts - 3 per row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* All charts displayed at full width */}
+      <div className="w-full">
+        <ChartBoxPlot />
+      </div>
+      
+      <div className="w-full">
+        <ChartScatterPlot />
+      </div>
+      
+      <div className="w-full">
         <ChartAreaDefault />
+      </div>
+      
+      <div className="w-full">
         <ChartBarLabelCustom />
+      </div>
+      
+      <div className="w-full">
         <ChartLineLabelCustom />
+      </div>
+      
+      <div className="w-full">
         <ChartPieLabelList />
+      </div>
+      
+      <div className="w-full">
         <ChartRadialLabel />
+      </div>
+      
+      <div className="w-full">
         <ChartTooltipAdvanced />
-        {/* Additional charts can be added here in a modular way */}
       </div>
     </div>
   );
