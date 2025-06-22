@@ -623,34 +623,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
                   Recent Reports
                 </h3>
                 <div className="space-y-3">
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-gray-50 border border-gray-200')}`}>
-                    <div>
-                      <h4 className={`font-medium ${getThemeClass('text-white', 'text-gray-900')}`}>Sales Report Dec 2024</h4>
-                      <p className={`text-sm ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>2024-01-15 • PDF</p>
-                    </div>
-                    <button className={`p-2 rounded-lg ${getThemeClass('hover:bg-zinc-700 text-zinc-400 hover:text-white', 'hover:bg-gray-200 text-gray-500 hover:text-gray-700')} transition-colors`}>
-                      <Download className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-gray-50 border border-gray-200')}`}>
-                    <div>
-                      <h4 className={`font-medium ${getThemeClass('text-white', 'text-gray-900')}`}>Customer Analysis Q4</h4>
-                      <p className={`text-sm ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>2024-01-14 • Excel</p>
-                    </div>
-                    <button className={`p-2 rounded-lg ${getThemeClass('hover:bg-zinc-700 text-zinc-400 hover:text-white', 'hover:bg-gray-200 text-gray-500 hover:text-gray-700')} transition-colors`}>
-                      <Download className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-gray-50 border border-gray-200')}`}>
-                    <div>
-                      <h4 className={`font-medium ${getThemeClass('text-white', 'text-gray-900')}`}>Inventory Report</h4>
-                      <p className={`text-sm ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>2024-01-13 • CSV</p>
-                    </div>
-                    <button className={`p-2 rounded-lg ${getThemeClass('hover:bg-zinc-700 text-zinc-400 hover:text-white', 'hover:bg-gray-200 text-gray-500 hover:text-gray-700')} transition-colors`}>
-                      <Download className="w-4 h-4" />
-                    </button>
+                  {/* Only show if there are actual reports generated - for now showing empty state */}
+                  <div className={`text-center py-8 ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
+                    <FileText className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                    <h4 className={`font-medium mb-1 ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
+                      No reports generated yet
+                    </h4>
+                    <p className="text-sm">
+                      Generate reports to see them here
+                    </p>
                   </div>
                 </div>
               </div>
@@ -674,71 +655,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
             </p>
           </div>
 
-          {uploadedFiles.length > 0 ? (
-            <div className="space-y-3">
-              {uploadedFiles.slice(0, 5).map((file, index) => {
-                const reportTypes = ['Data Analysis', 'Statistical Summary', 'Quality Report', 'Performance Metrics'];
-                const reportType = reportTypes[index % reportTypes.length];
-                const timeAgo = Math.floor((Date.now() - new Date(file.uploadDate).getTime()) / (1000 * 60));
-                
-                return (
-                  <div 
-                    key={file.id} 
-                    className={`flex items-center justify-between p-4 rounded-lg ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-gray-50 border border-gray-200')} transition-colors hover:${getThemeClass('bg-zinc-700', 'bg-gray-100')}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${getThemeClass('bg-zinc-700', 'bg-white')}`}>
-                        <FileText className={`w-4 h-4 ${getThemeClass('text-zinc-400', 'text-gray-600')}`} />
-                      </div>
-                      <div>
-                        <h3 className={`font-medium ${getThemeClass('text-white', 'text-gray-900')}`}>
-                          {reportType} - {file.name.replace('.csv', '')}
-                        </h3>
-                        <p className={`text-sm ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
-                          {timeAgo < 1 ? 'Just now' : `${timeAgo}m ago`} • {file.rowCount.toLocaleString()} rows
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getThemeClass('bg-green-500/20 text-green-400', 'bg-green-100 text-green-700')}`}>
-                        Ready
-                      </span>
-                      <button
-                        className={`p-2 rounded-lg ${getThemeClass('hover:bg-zinc-600 text-zinc-400 hover:text-white', 'hover:bg-gray-200 text-gray-500 hover:text-gray-700')} transition-colors`}
-                        onClick={() => {
-                          // Simulate download - in real app this would download the actual report
-                          console.log('Download report for:', file.name);
-                        }}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {uploadedFiles.length > 5 && (
-                <div className={`text-center py-4 border-t ${getThemeClass('border-zinc-700', 'border-gray-200')}`}>
-                  <button className={`text-sm ${getThemeClass('text-zinc-400 hover:text-white', 'text-gray-600 hover:text-gray-900')} transition-colors`}>
-                    View all {uploadedFiles.length} reports
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className={`text-center py-12 ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <h3 className={`font-medium mb-2 ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
-                No reports generated yet
-              </h3>
-              <p className="text-sm">
-                Upload data and generate reports to see them here
-              </p>
-                         </div>
-           )}
+          <div className={`text-center py-12 ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
+            <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <h3 className={`font-medium mb-2 ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
+              No reports generated yet
+            </h3>
+            <p className="text-sm">
+              Upload data and generate reports to see them here
+            </p>
+          </div>
          </motion.div>
 
         {/* Management Section */}
