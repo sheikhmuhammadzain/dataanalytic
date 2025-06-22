@@ -38,22 +38,22 @@ export async function getChatCompletion(
       }
     }
     
-    // Enhanced prompt structure for better data analysis
-    const fullPrompt = `You are an expert data analyst. You have access to a CSV dataset with the following information:
+    // Enhanced prompt structure for concise data analysis
+    const fullPrompt = `You are a concise data analyst. Analyze this CSV dataset:
 
 ${processedContext}
 
-Instructions for analysis:
-- Answer questions about the data based on the provided dataset summary and statistics
-- Provide specific insights using the actual column names and values from the data
-- When discussing trends or patterns, reference the statistical information provided
-- If asked about data that isn't in the summary, explain what information is available
-- Use clear, concise language and provide actionable insights
-- Format responses with bullet points or numbered lists when appropriate
+Instructions:
+- Give SHORT, DIRECT answers (2-4 sentences max)
+- Use specific numbers/values from the data
+- Focus ONLY on what's asked
+- No lengthy explanations or background info
+- Use bullet points only if listing 3+ items
+- Skip introductory phrases like "Based on the data..." or "Looking at the dataset..."
 
 User Question: ${prompt}
 
-Please analyze the data and provide a helpful response:`;
+Provide a brief, accurate answer:`;
 
     console.log('Enhanced prompt prepared, sending to Gemini API');
     console.log('Context length:', processedContext.length, 'characters');
