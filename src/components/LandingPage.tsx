@@ -7,7 +7,6 @@ import {
   ArrowRight, 
   LineChart, 
   PieChart, 
-  Sparkles,
   Brain,
   Zap,
   Upload,
@@ -20,12 +19,11 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { FileUpload } from './FileUpload';
 import { useDataStore } from '../store/dataStore';
 import { Spotlight } from './Spotlight';
 import { motion } from 'framer-motion';
-import { generateSyntheticPaintsData } from '../services/gemini';
 import dataGif from '../lib/data.gif';
+import { Login } from './Login';
 
 // Theme colors defined in CSS variables
 
@@ -123,11 +121,13 @@ const benefits = [
 
 export const LandingPage: React.FC = () => {
   const processedData = useDataStore(state => state.processedData);
+  const isAuthenticated = useDataStore(state => state.isAuthenticated);
   const setRawData = useDataStore(state => state.setRawData);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const [showLoginPage, setShowLoginPage] = useState(false);
 
   // Load theme from localStorage on component mount, default to light
   useEffect(() => {
@@ -149,25 +149,68 @@ export const LandingPage: React.FC = () => {
     document.documentElement.classList.toggle('light-mode', newTheme === 'light');
   };
 
-  const handleGenerateSyntheticData = async () => {
-    setIsGenerating(true);
-    try {
-      const syntheticData = await generateSyntheticPaintsData();
-      setRawData(syntheticData);
-    } catch (error) {
-      console.error('Failed to generate synthetic data:', error);
-      // You could add a toast notification here
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
-  if (processedData) return null;
 
   // Dynamic classes based on theme
   const getThemeClass = (darkClass: string, lightClass: string) => {
     return theme === 'dark' ? darkClass : lightClass;
   };
+
+  if (processedData) return null;
+
+  // Show login page if requested
+  if (showLoginPage) {
+    return (
+      <div className={`min-h-screen relative flex flex-col overflow-hidden font-sans ${getThemeClass('bg-black', 'bg-white')}`}>
+        {/* Spotlight Effect - only visible in dark mode */}
+        {theme === 'dark' && <Spotlight className="top-0 left-0 -translate-x-[60%] -translate-y-[10%]" fill="white" />}
+
+        {/* Theme-specific background */}
+        <div className="absolute inset-0">
+          {theme === 'dark' ? (
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+          ) : (
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#fff_70%,transparent_100%)]" />
+          )}
+        </div>
+
+        <header className={`relative border-b ${getThemeClass('border-white/10 bg-black/50', 'border-gray-200 bg-white/90')} backdrop-blur-xl sticky top-0 z-50 w-full`}>
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart2 className={getThemeClass('text-indigo-500', 'text-[#0052A5]')} />
+                <span className={`font-bold text-xl ${getThemeClass('bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text', 'text-[#0052A5]')}`}>
+                  Qubit Dynamics
+                </span>
+              </div>
+              
+              {/* Theme toggle button */}
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={toggleTheme}
+                  className={`p-2 rounded-full ${getThemeClass('bg-white/10 text-white hover:bg-white/20', 'bg-gray-100 text-gray-800 hover:bg-gray-200')} transition-colors`}
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+                
+                <button
+                  onClick={() => setShowLoginPage(false)}
+                  className={`px-4 py-2 rounded-lg ${getThemeClass('text-white/70 hover:text-white hover:bg-white/10', 'text-gray-600 hover:text-[#0052A5] hover:bg-gray-100')} transition-colors`}
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center py-12">
+          <Login theme={theme} getThemeClass={getThemeClass} />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen relative flex flex-col overflow-hidden font-sans ${getThemeClass('bg-black', 'bg-white')}`}>
@@ -189,7 +232,7 @@ export const LandingPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <BarChart2 className={getThemeClass('text-indigo-500', 'text-[#0052A5]')} />
               <span className={`font-bold text-xl ${getThemeClass('bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text', 'text-[#0052A5]')}`}>
-                BusinessIntel
+                Qubit Dynamics
               </span>
             </div>
             
@@ -209,7 +252,10 @@ export const LandingPage: React.FC = () => {
               <a href="#visualizations" className={`text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}>Visualizations</a>
            
               
-              <button className={`${getThemeClass('bg-indigo-600 hover:bg-indigo-700 text-white', 'bg-[#0052A5] hover:bg-[#004080] text-white')} px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1`}>
+              <button 
+                onClick={() => setShowLoginPage(true)}
+                className={`${getThemeClass('bg-indigo-600 hover:bg-indigo-700 text-white', 'bg-[#0052A5] hover:bg-[#004080] text-white')} px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1`}
+              >
                 Get Started <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </nav>
@@ -246,7 +292,10 @@ export const LandingPage: React.FC = () => {
                 GitHub <ArrowUpRight className="h-3 w-3" />
               </a>
               
-              <button className={`${getThemeClass('bg-indigo-600 hover:bg-indigo-700 text-white', 'bg-[#0052A5] hover:bg-[#004080] text-white')} px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1 w-fit`}>
+              <button 
+                onClick={() => setShowLoginPage(true)}
+                className={`${getThemeClass('bg-indigo-600 hover:bg-indigo-700 text-white', 'bg-[#0052A5] hover:bg-[#004080] text-white')} px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1 w-fit`}
+              >
                 Get Started <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -296,9 +345,9 @@ export const LandingPage: React.FC = () => {
                     />
                   </div>
 
-                {/* Upload Component */}
+                {/* Get Started Section */}
                 <motion.div variants={fadeIn} className="lg:w-1/3 w-full flex flex-col items-center space-y-4 lg:space-y-6">
-                  {isLoading || isGenerating ? (
+                  {isLoading ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -310,49 +359,18 @@ export const LandingPage: React.FC = () => {
                         <div className={`absolute inset-0 animate-pulse rounded-full h-12 w-12 border-2 ${getThemeClass('border-indigo-400 opacity-50', 'border-[#0052A5] opacity-50')}`}></div>
                       </div>
                       <p className={`${getThemeClass('text-white/80', 'text-gray-800')} text-lg font-medium text-center`}>
-                        {isGenerating 
-                          ? "Generating synthetic paints company data..." 
-                          : "Performing ETL transformations on your data... Hang on!"
-                        }
+                        Performing ETL transformations on your data... Hang on!
                       </p>
                     </motion.div>
                   ) : (
                     <>
-                      <FileUpload
-                        className={`px-8 py-4 text-lg font-semibold text-white ${getThemeClass('bg-gradient-to-r from-indigo-500 to-purple-500', 'bg-gradient-to-r from-[#0052A5] to-[#0052A5]/80')} rounded-lg shadow-lg hover:shadow-xl transition-shadow`}
-                        onUploadStart={() => setIsLoading(true)}
-                        onUploadComplete={() => setIsLoading(false)}
-                      />
-                      
-                      <div className="flex items-center space-x-4 text-white/50">
-                        <div className={`h-px ${getThemeClass('bg-white/20', 'bg-gray-300')} flex-1`}></div>
-                        <span className={`text-sm font-medium ${getThemeClass('text-white/50', 'text-gray-500')}`}>OR</span>
-                        <div className={`h-px ${getThemeClass('bg-white/20', 'bg-gray-300')} flex-1`}></div>
-                      </div>
-                      
-                      <div className="relative group">
-                        <button
-                          onClick={handleGenerateSyntheticData}
-                          disabled={isGenerating}
-                          className={`relative inline-block p-px font-semibold leading-6 ${getThemeClass('text-white bg-gray-800 shadow-zinc-900', 'text-white bg-gray-100 shadow-blue-900/10')} shadow-2xl cursor-pointer rounded-xl transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-                        >
-                          <span className={`absolute inset-0 rounded-xl ${getThemeClass('bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500', 'bg-gradient-to-r from-[#0052A5] to-[#E63946]')} p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100`}></span>
-                          
-                          <span className={`relative z-10 block px-6 py-3 rounded-xl ${getThemeClass('bg-gray-950', 'bg-white')}`}>
-                            <div className="relative z-10 flex items-center space-x-2">
-                              <Sparkles className={`w-5 h-5 ${getThemeClass('text-white', 'text-[#0052A5]')} transition-transform duration-500 group-hover:translate-x-1`} />
-                              <span className={`${getThemeClass('text-white', 'text-gray-800')} transition-all duration-500 group-hover:translate-x-1`}>
-                                Generate Synthetic Data
-                              </span>
-                              <ArrowRight className={`w-5 h-5 ${getThemeClass('text-white', 'text-[#0052A5]')} transition-transform duration-500 group-hover:translate-x-1`} />
-                            </div>
-                          </span>
-                        </button>
-                      </div>
-                      
-                      <p className={`text-sm ${getThemeClass('text-white/50', 'text-gray-500')} text-center max-w-sm`}>
-                        Try our demo with AI-generated paints company data to explore all features
-                      </p>
+                      <button
+                        onClick={() => setShowLoginPage(true)}
+                        className={`px-8 py-4 text-lg font-semibold text-white ${getThemeClass('bg-gradient-to-r from-indigo-500 to-purple-500', 'bg-gradient-to-r from-[#0052A5] to-[#0052A5]/80')} rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+                      >
+                        Get Started
+                        <ArrowRight className="w-5 h-5" />
+                      </button>
                     </>
                   )}
                 </motion.div>
@@ -523,7 +541,7 @@ export const LandingPage: React.FC = () => {
                 Are you ready to harness the power of data analytics and AI? Contact us today to explore customized solutions tailored to your unique challenges.
               </p>
               <div className="flex flex-col items-center space-y-6">
-                {isLoading || isGenerating ? (
+                {isLoading ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -535,45 +553,18 @@ export const LandingPage: React.FC = () => {
                       <div className={`absolute inset-0 animate-pulse rounded-full h-12 w-12 border-2 ${getThemeClass('border-indigo-400 opacity-50', 'border-[#0052A5] opacity-50')}`}></div>
                     </div>
                     <p className={`${getThemeClass('text-white/80', 'text-gray-800')} text-lg font-medium`}>
-                      {isGenerating 
-                        ? "Generating synthetic paints company data..." 
-                        : "Performing ETL transformations on your data... Hang on!"
-                      }
+                      Performing ETL transformations on your data... Hang on!
                     </p>
                   </motion.div>
                 ) : (
                   <>
-                    <FileUpload
-                      className={`px-8 py-4 text-lg font-semibold text-white ${getThemeClass('bg-gradient-to-r from-indigo-500 to-purple-500', 'bg-gradient-to-r from-[#0052A5] to-[#0052A5]/80')} rounded-lg shadow-lg hover:shadow-xl transition-shadow`}
-                      onUploadStart={() => setIsLoading(true)}
-                      onUploadComplete={() => setIsLoading(false)}
-                    />
-                    
-                    <div className="flex items-center space-x-4 text-white/50">
-                      <div className={`h-px ${getThemeClass('bg-white/20', 'bg-gray-300')} flex-1 max-w-20`}></div>
-                      <span className={`text-sm font-medium ${getThemeClass('text-white/50', 'text-gray-500')}`}>OR</span>
-                      <div className={`h-px ${getThemeClass('bg-white/20', 'bg-gray-300')} flex-1 max-w-20`}></div>
-                    </div>
-                    
-                    <div className="relative group">
-                      <button
-                        onClick={handleGenerateSyntheticData}
-                        disabled={isGenerating}
-                        className={`relative inline-block p-px font-semibold leading-6 ${getThemeClass('text-white bg-gray-800 shadow-zinc-900', 'text-white bg-gray-100 shadow-blue-900/10')} shadow-2xl cursor-pointer rounded-xl transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-                      >
-                        <span className={`absolute inset-0 rounded-xl ${getThemeClass('bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500', 'bg-gradient-to-r from-[#0052A5] to-[#E63946]')} p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100`}></span>
-                        
-                        <span className={`relative z-10 block px-6 py-3 rounded-xl ${getThemeClass('bg-gray-950', 'bg-white')}`}>
-                          <div className="relative z-10 flex items-center space-x-2">
-                            <Sparkles className={`w-5 h-5 ${getThemeClass('text-white', 'text-[#0052A5]')} transition-transform duration-500 group-hover:translate-x-1`} />
-                            <span className={`${getThemeClass('text-white', 'text-gray-800')} transition-all duration-500 group-hover:translate-x-1`}>
-                              Generate Synthetic Data
-                            </span>
-                            <ArrowRight className={`w-5 h-5 ${getThemeClass('text-white', 'text-[#0052A5]')} transition-transform duration-500 group-hover:translate-x-1`} />
-                          </div>
-                        </span>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setShowLoginPage(true)}
+                      className={`px-8 py-4 text-lg font-semibold text-white ${getThemeClass('bg-gradient-to-r from-indigo-500 to-purple-500', 'bg-gradient-to-r from-[#0052A5] to-[#0052A5]/80')} rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+                    >
+                      Get Started
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
                   </>
                 )}
               </div>
@@ -589,7 +580,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex items-center gap-2 mb-4">
                 <BarChart2 className={getThemeClass('text-indigo-500', 'text-[#0052A5]')} />
                 <span className={`font-bold text-xl ${getThemeClass('bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text', 'text-[#0052A5]')}`}>
-                  BusinessIntel
+                  Qubit Dynamics
                 </span>
               </div>
               <p className={`text-sm ${getThemeClass('text-white/50', 'text-gray-500')}`}>
@@ -628,7 +619,7 @@ export const LandingPage: React.FC = () => {
           <div className={`mt-12 pt-8 border-t ${getThemeClass('border-white/10', 'border-gray-100')}`}>
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className={`text-sm ${getThemeClass('text-white/50', 'text-gray-500')}`}>
-                © 2024 BusinessIntel. All rights reserved.
+                © 2024 Qubit Dynamics. All rights reserved.
               </p>
               <div className="flex items-center gap-4">
                 <a href="#" className={`${getThemeClass('text-white/50 hover:text-white', 'text-gray-500 hover:text-[#0052A5]')} transition-colors`}>

@@ -36,6 +36,16 @@ interface DataTransformation {
   data: ProcessedData;
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+  uploadDate: string;
+  rowCount: number;
+  columnCount: number;
+  size: string;
+  type: string;
+}
+
 interface DataStore {
   rawData: Record<string, string | number | null>[] | null;
   processedData: ProcessedData | null;
@@ -45,7 +55,13 @@ interface DataStore {
   currentHistoryIndex: number;
   isProcessing: boolean;
   error: string | null;
-  setRawData: (data: Record<string, string | number | null>[]) => void;
+  // Authentication state
+  isAuthenticated: boolean;
+  user: { email: string; role: string } | null;
+  // File tracking
+  uploadedFiles: UploadedFile[];
+  showAdminPanel: boolean;
+  setRawData: (data: Record<string, string | number | null>[], fileName?: string) => void;
   setFilterValue: (value: string) => void;
   setSelectedColumns: (columns: string[]) => void;
   getFilteredData: () => Record<string, string | number | null>[];
@@ -53,6 +69,13 @@ interface DataStore {
   undoTransformation: () => void;
   redoTransformation: () => void;
   resetError: () => void;
+  // Authentication methods
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
+  // Admin panel methods
+  setShowAdminPanel: (show: boolean) => void;
+  addUploadedFile: (file: UploadedFile) => void;
+  getUploadedFiles: () => UploadedFile[];
 }
 
 const CHUNK_SIZE = 10000; // Process data in chunks of 10k rows
@@ -182,6 +205,25 @@ const processDataInChunks = async (
   };
 };
 
+// localStorage helper functions
+const saveToLocalStorage = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Failed to save to localStorage:', error);
+  }
+};
+
+const loadFromLocalStorage = (key: string, defaultValue: any = null) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.warn('Failed to load from localStorage:', error);
+    return defaultValue;
+  }
+};
+
 export const useDataStore = create<DataStore>((set, get) => ({
   rawData: null,
   processedData: null,
@@ -191,7 +233,13 @@ export const useDataStore = create<DataStore>((set, get) => ({
   currentHistoryIndex: -1,
   isProcessing: false,
   error: null,
-  setRawData: (data) => {
+  // Authentication state
+  isAuthenticated: loadFromLocalStorage('isAuthenticated', false),
+  user: loadFromLocalStorage('user', null),
+  // File tracking
+  uploadedFiles: loadFromLocalStorage('uploadedFiles', []),
+  showAdminPanel: loadFromLocalStorage('showAdminPanel', false),
+  setRawData: (data, fileName) => {
     if (!data || data.length === 0) {
       set({ 
         rawData: null, 
@@ -210,20 +258,57 @@ export const useDataStore = create<DataStore>((set, get) => ({
     processDataInChunks(data)
       .then((processed) => {
         if (processed) {
-          set({
-            rawData: data,
-            processedData: processed,
-            selectedColumns: processed.headers,
-            transformationHistory: [{
-              type: 'initial',
-              description: 'Initial data load',
-              timestamp: new Date(),
-              data: processed
-            }],
-            currentHistoryIndex: 0,
-            isProcessing: false,
-            error: null
-          });
+          // Add uploaded file to records if fileName is provided
+          if (fileName) {
+            const newFile: UploadedFile = {
+              id: Date.now().toString(),
+              name: fileName,
+              uploadDate: new Date().toISOString(),
+              rowCount: processed.summary.rowCount,
+              columnCount: processed.summary.columnCount,
+              size: `${Math.round(data.length * 0.001)}KB`, // Rough estimate
+              type: 'CSV'
+            };
+            
+            const currentFiles = get().uploadedFiles;
+            const updatedFiles = [newFile, ...currentFiles];
+            saveToLocalStorage('uploadedFiles', updatedFiles);
+            
+            set({
+              rawData: data,
+              processedData: processed,
+              selectedColumns: processed.headers,
+              transformationHistory: [{
+                type: 'initial',
+                description: 'Initial data load',
+                timestamp: new Date(),
+                data: processed
+              }],
+              currentHistoryIndex: 0,
+              isProcessing: false,
+              error: null,
+              uploadedFiles: updatedFiles,
+              showAdminPanel: false
+            });
+            
+            // Also save showAdminPanel state to localStorage
+            saveToLocalStorage('showAdminPanel', false);
+          } else {
+            set({
+              rawData: data,
+              processedData: processed,
+              selectedColumns: processed.headers,
+              transformationHistory: [{
+                type: 'initial',
+                description: 'Initial data load',
+                timestamp: new Date(),
+                data: processed
+              }],
+              currentHistoryIndex: 0,
+              isProcessing: false,
+              error: null
+            });
+          }
         }
       })
       .catch((error) => {
@@ -322,5 +407,58 @@ export const useDataStore = create<DataStore>((set, get) => ({
       error: null
     });
   },
-  resetError: () => set({ error: null })
+  resetError: () => set({ error: null }),
+  // Authentication methods
+  login: (email: string, password: string) => {
+    // Demo credentials
+    if (email === 'admin@qubit.com' && password === 'admin123') {
+      const authState = { 
+        isAuthenticated: true, 
+        user: { email, role: 'admin' },
+        showAdminPanel: true
+      };
+      
+      // Save to localStorage
+      saveToLocalStorage('isAuthenticated', true);
+      saveToLocalStorage('user', { email, role: 'admin' });
+      saveToLocalStorage('showAdminPanel', true);
+      
+      set(authState);
+      return true;
+    }
+    return false;
+  },
+  logout: () => {
+    // Clear localStorage
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('user');
+    localStorage.removeItem('showAdminPanel');
+    
+    set({ 
+      isAuthenticated: false, 
+      user: null,
+      rawData: null,
+      processedData: null,
+      selectedColumns: [],
+      transformationHistory: [],
+      currentHistoryIndex: -1,
+      filterValue: "",
+      error: null,
+      showAdminPanel: false
+    });
+  },
+  // Admin panel methods
+  setShowAdminPanel: (show: boolean) => {
+    saveToLocalStorage('showAdminPanel', show);
+    set({ showAdminPanel: show });
+  },
+  addUploadedFile: (file: UploadedFile) => {
+    const currentFiles = get().uploadedFiles;
+    const updatedFiles = [file, ...currentFiles];
+    saveToLocalStorage('uploadedFiles', updatedFiles);
+    set({ uploadedFiles: updatedFiles });
+  },
+  getUploadedFiles: () => {
+    return get().uploadedFiles;
+  }
 }));

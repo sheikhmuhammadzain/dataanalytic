@@ -646,7 +646,6 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                       "Summarize this data",
                       processedData.summary.numericalColumns.length > 0 ? `Analyze ${processedData.summary.numericalColumns[0]}` : null,
                       "Find patterns",
-                      "Show key insights"
                     ].filter((q): q is string => Boolean(q)).map((question, index) => (
                       <motion.button
                         key={index}

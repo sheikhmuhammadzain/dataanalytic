@@ -146,7 +146,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           complete: () => {
             setUploadComplete(true);
             queueMicrotask(() => {
-              setRawData(rows);
+              setRawData(rows, file.name);
               if(onUploadComplete) onUploadComplete();
               resolve(true);
             });

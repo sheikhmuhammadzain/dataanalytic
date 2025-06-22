@@ -7,6 +7,7 @@ import { DataChat } from './components/DataChat';
 import { useDataStore } from './store/dataStore';
 import { BarChart2, Table2, Sparkles, ArrowRight, Download, Share2, FileText, Settings, HelpCircle, Calculator, FileDown, Filter } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
+import { AdminPanel } from './components/AdminPanel';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Menu, MenuItem, HoveredLink } from './components/ui/navbar-menu';
@@ -42,9 +43,26 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
 
 function App() {
   const processedData = useDataStore(state => state.processedData);
+  const isAuthenticated = useDataStore(state => state.isAuthenticated);
+  const showAdminPanel = useDataStore(state => state.showAdminPanel);
+  const setShowAdminPanel = useDataStore(state => state.setShowAdminPanel);
   const [active, setActive] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+
+  // Load theme from localStorage on component mount
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  // Helper function for theme-based classes
+  const getThemeClass = (darkClass: string, lightClass: string) => {
+    return theme === 'dark' ? darkClass : lightClass;
+  };
 
   const handleScroll = (id: string) => {
     const element = document.getElementById(id);
@@ -100,6 +118,16 @@ function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return <LandingPage />;
+  }
+
+  // Show admin panel if requested
+  if (showAdminPanel) {
+    return <AdminPanel theme={theme} getThemeClass={getThemeClass} />;
+  }
+
+  // Show landing page if no data
   if (!processedData) {
     return <LandingPage />;
   }
@@ -183,6 +211,19 @@ function App() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3"
           >
+            <button
+              onClick={() => setShowAdminPanel(true)}
+              className="bg-gray-100 hover:bg-gray-200 no-underline group cursor-pointer relative shadow-sm border border-gray-200 rounded-full p-px text-xs font-semibold leading-6 text-gray-700 inline-block transition-all duration-300"
+            >
+              <span className="absolute inset-0 overflow-hidden rounded-full">
+                <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(59,130,246,0.1)_0%,rgba(59,130,246,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              </span>
+              <div className="relative flex space-x-2 items-center z-10 rounded-full bg-white py-0.5 px-4 ring-1 ring-gray-200 group-hover:ring-blue-300">
+                <span className="text-gray-700 group-hover:text-blue-700">Back to Admin Panel</span>
+                <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
+              </div>
+              <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-blue-400/0 via-blue-400/50 to-blue-400/0 transition-opacity duration-500 group-hover:opacity-40" />
+            </button>
             <FileUpload 
               onUploadStart={() => {}} 
               onUploadComplete={() => {}}
