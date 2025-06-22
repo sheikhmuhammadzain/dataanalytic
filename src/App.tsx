@@ -28,16 +28,9 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
 }) => (
   <button 
     onClick={onClick}
-    className={`bg-gray-100 hover:bg-gray-200 no-underline group cursor-pointer relative shadow-sm border border-gray-200 rounded-full p-px text-xs font-semibold leading-6 text-gray-700 inline-block transition-all duration-300 ${className}`}
+    className={`group relative inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${className}`}
   >
-    <span className="absolute inset-0 overflow-hidden rounded-full">
-      <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(59,130,246,0.1)_0%,rgba(59,130,246,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-    </span>
-    <div className="relative flex space-x-2 items-center z-10 rounded-full bg-white py-0.5 px-4 ring-1 ring-gray-200 group-hover:ring-blue-300">
-      <span className="text-gray-700 group-hover:text-blue-700">{children}</span>
-      <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
-    </div>
-    <span className="absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r from-blue-400/0 via-blue-400/50 to-blue-400/0 transition-opacity duration-500 group-hover:opacity-40" />
+    {children}
   </button>
 );
 
@@ -274,14 +267,14 @@ function App() {
                     Comprehensive analysis and visualization of your data
                   </CardDescription>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <PremiumButton onClick={() => handleScroll('analytics-dashboard')}>
-                    <BarChart2 className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-                    <span className="text-gray-700 group-hover:text-blue-700">View All Charts</span>
+                    <BarChart2 className="h-4 w-4" />
+                    View All Charts
                   </PremiumButton>
                   <PremiumButton onClick={() => setShowFilters(prev => !prev)}>
-                    <Settings className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-                    <span className="text-gray-700 group-hover:text-blue-700">Customize View</span>
+                    <Settings className="h-4 w-4" />
+                    Customize View
                   </PremiumButton>
                   <PremiumButton 
                     onClick={() => handleDownloadAnalyticsReport('html')} 
@@ -292,16 +285,15 @@ function App() {
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="mr-2"
                         >
-                          <Download className="h-4 w-4 text-gray-500" />
+                          <Download className="h-4 w-4" />
                         </motion.div>
-                        <span className="text-gray-700">Generating...</span>
+                        Generating...
                       </>
                     ) : (
                       <>
-                        <FileDown className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-                        <span className="text-gray-700 group-hover:text-blue-700">Insights Report</span>
+                        <FileDown className="h-4 w-4" />
+                        Insights Report
                       </>
                     )}
                   </PremiumButton>
@@ -333,14 +325,14 @@ function App() {
                       Browse and search through your dataset
                     </CardDescription>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <PremiumButton onClick={() => setShowFilters(prev => !prev)}>
-                      <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-                      <span className="text-gray-700 group-hover:text-blue-700">Filter Data</span>
+                      <Filter className="h-4 w-4" />
+                      Filter Data
                     </PremiumButton>
                     <PremiumButton onClick={handleDownloadCSV}>
-                      <Download className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-                      <span className="text-gray-700 group-hover:text-blue-700">Download CSV</span>
+                      <Download className="h-4 w-4" />
+                      Download CSV
                     </PremiumButton>
                     <PremiumButton 
                       onClick={() => handleDownloadAnalyticsReport('txt')} 
@@ -351,16 +343,15 @@ function App() {
                           <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="mr-2"
                           >
-                            <FileText className="h-4 w-4 text-gray-500" />
+                            <FileText className="h-4 w-4" />
                           </motion.div>
-                          <span className="text-gray-700">Generating...</span>
+                          Generating...
                         </>
                       ) : (
                         <>
-                          <FileText className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-                          <span className="text-gray-700 group-hover:text-blue-700">Insights Report</span>
+                          <FileText className="h-4 w-4" />
+                          Insights Report
                         </>
                       )}
                     </PremiumButton>

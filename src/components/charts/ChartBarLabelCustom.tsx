@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis, ResponsiveContainer } from "recharts"
 import { useMemo } from "react"
 import { useDataStore } from "../../store/dataStore"
+import { ChartExplanation } from "../ChartExplanation"
 
 import {
   Card,
@@ -113,7 +114,7 @@ export function ChartBarLabelCustom() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Bar Chart - Custom Label</CardTitle>
+          <CardTitle>Category Comparison Analysis</CardTitle>
           <CardDescription>
             Upload CSV data to visualize category comparisons
           </CardDescription>
@@ -143,11 +144,17 @@ export function ChartBarLabelCustom() {
   }, [chartData, yAxisKey, xAxisKey]);
 
   return (
-    <Card>
+    <Card className="relative">
+      <ChartExplanation
+        chartType="Bar Chart"
+        dataKeys={{ xAxisKey, yAxisKey }}
+        chartData={chartData}
+        insights={{ trend }}
+      />
       <CardHeader>
-        <CardTitle>Bar Chart - Custom Label</CardTitle>
+        <CardTitle>Top {chartData.length} {xAxisKey.replace(/_/g, ' ')} by {yAxisKey.replace(/_/g, ' ')}</CardTitle>
         <CardDescription>
-          Top {chartData.length} {xAxisKey} by {yAxisKey}
+          Top {chartData.length} {xAxisKey.replace(/_/g, ' ').toLowerCase()} by {yAxisKey.replace(/_/g, ' ').toLowerCase()}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -201,7 +208,7 @@ export function ChartBarLabelCustom() {
           </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 text-sm">
+      <CardFooter>
         <div className="flex gap-2 leading-none font-medium">
           {trend.direction === 'up' && (
             <>"{trend.leader}" leads significantly <TrendingUp className="h-4 w-4" /></>

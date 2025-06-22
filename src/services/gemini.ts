@@ -38,22 +38,29 @@ export async function getChatCompletion(
       }
     }
     
-    // Enhanced prompt structure for concise data analysis
-    const fullPrompt = `You are a concise data analyst. Analyze this CSV dataset:
+    // Enhanced prompt structure for interactive data analysis
+    const fullPrompt = `You are a helpful data analyst assistant. Analyze this CSV dataset:
 
 ${processedContext}
 
 Instructions:
-- Give SHORT, DIRECT answers (2-4 sentences max)
-- Use specific numbers/values from the data
-- Focus ONLY on what's asked
-- No lengthy explanations or background info
+- If the question is clear and specific, give SHORT, DIRECT answers (2-4 sentences max)
+- Use specific numbers/values from the data when available
+- If the question is unclear, ambiguous, or lacks context, ASK for clarification
+- When asking for clarification, suggest specific aspects they might be interested in
+- For questions about "leading" or "significance", ask what metric they want to compare (sales, quality, price, etc.)
+- For vague questions, offer 2-3 specific analysis options they might want
 - Use bullet points only if listing 3+ items
-- Skip introductory phrases like "Based on the data..." or "Looking at the dataset..."
+- Be conversational and helpful
+
+Examples of when to ask for clarification:
+- "Why does X lead significantly?" → Ask: "What metric would you like me to analyze for X? Sales volume, price, quality rating, or something else?"
+- "What's the best product?" → Ask: "What makes a product 'best' for your analysis? Highest sales, best quality rating, or most profitable?"
+- "Tell me about the data" → Ask: "What specific aspect interests you? Sales trends, product performance, regional differences, or something else?"
 
 User Question: ${prompt}
 
-Provide a brief, accurate answer:`;
+Provide a helpful response (either an answer or clarifying questions):`;
 
     console.log('Enhanced prompt prepared, sending to Gemini API');
     console.log('Context length:', processedContext.length, 'characters');
@@ -293,4 +300,60 @@ function generateFallbackPaintsData(): Record<string, string | number | null>[] 
   }
   
   return data;
+}
+
+export async function generateChartExplanation(params: {
+  chartType: string;
+  dataKeys: any;
+  chartData: any[];
+  insights?: any;
+  dataSize: number;
+}): Promise<string> {
+  try {
+    console.log('Generating chart explanation...');
+    
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('Missing API key. Please check your environment variables.');
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    // Prepare data context
+    const dataContext = JSON.stringify(params.chartData, null, 2);
+    const insightsContext = params.insights ? JSON.stringify(params.insights, null, 2) : 'No insights available';
+    
+    const prompt = `Explain this data visualization in simple, business-friendly terms:
+
+Chart Type: ${params.chartType}
+Data Fields: ${JSON.stringify(params.dataKeys)}
+Sample Data (first 5 rows):
+${dataContext}
+
+Additional Insights:
+${insightsContext}
+
+Total Data Points: ${params.dataSize}
+
+Please provide a clear, concise explanation that covers:
+1. What this chart shows
+2. Key patterns or insights visible in the data
+3. What business decisions this chart could help with
+4. Any notable trends or outliers
+
+Keep it under 200 words and use simple language that any business user would understand.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const explanation = response.text();
+    
+    console.log('Chart explanation generated successfully');
+    return explanation;
+    
+  } catch (error) {
+    console.error('Error generating chart explanation:', error);
+    throw new Error('Failed to generate chart explanation');
+  }
 } 

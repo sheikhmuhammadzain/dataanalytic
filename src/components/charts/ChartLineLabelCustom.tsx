@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react"
 import { CartesianGrid, LabelList, Line, LineChart, XAxis, ResponsiveContainer } from "recharts"
 import { useMemo } from "react"
 import { useDataStore } from "../../store/dataStore"
+import { ChartExplanation } from "../ChartExplanation"
 
 import {
   Card,
@@ -105,7 +106,7 @@ export function ChartLineLabelCustom() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Line Chart - Custom Label</CardTitle>
+          <CardTitle>Progression Analysis</CardTitle>
           <CardDescription>
             Upload CSV data to visualize trends and patterns
           </CardDescription>
@@ -119,36 +120,33 @@ export function ChartLineLabelCustom() {
     );
   }
 
-  // Calculate trend and volatility
-  const analysis = useMemo(() => {
-    if (chartData.length < 2) return { direction: 'stable', percentage: 0, volatility: 'low' };
+  // Calculate trend based on first vs last values
+  const trend = useMemo(() => {
+    if (chartData.length < 2) return { direction: 'stable', percentage: 0 };
     
-    const values = chartData.map(item => item[yAxisKey]);
-    const firstValue = values[0];
-    const lastValue = values[values.length - 1];
+    const firstValue = chartData[0][yAxisKey];
+    const lastValue = chartData[chartData.length - 1][yAxisKey];
     const change = ((lastValue - firstValue) / firstValue) * 100;
     
-    // Calculate volatility
-    const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
-    const standardDev = Math.sqrt(variance);
-    const coefficientOfVariation = (standardDev / avg) * 100;
-    
     return {
-      direction: change > 5 ? 'up' : change < -5 ? 'down' : 'stable',
+      direction: change > 10 ? 'up' : change < -10 ? 'down' : 'stable',
       percentage: Math.abs(change).toFixed(1),
-      volatility: coefficientOfVariation > 30 ? 'high' : coefficientOfVariation > 15 ? 'medium' : 'low',
-      peak: Math.max(...values),
-      valley: Math.min(...values)
+      range: `${Math.min(...chartData.map(d => d[yAxisKey]))} - ${Math.max(...chartData.map(d => d[yAxisKey]))}`
     };
   }, [chartData, yAxisKey]);
 
   return (
-    <Card>
+    <Card className="relative">
+      <ChartExplanation
+        chartType="Line Chart"
+        dataKeys={{ xAxisKey, yAxisKey }}
+        chartData={chartData}
+        insights={{ trend }}
+      />
       <CardHeader>
-        <CardTitle>Line Chart - Custom Label</CardTitle>
+        <CardTitle>{yAxisKey.replace(/_/g, ' ')} Progression Across {xAxisKey.replace(/_/g, ' ')}</CardTitle>
         <CardDescription>
-          {yAxisKey} progression across {xAxisKey}
+          {yAxisKey.replace(/_/g, ' ').toLowerCase()} progression across {xAxisKey.replace(/_/g, ' ').toLowerCase()}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -209,18 +207,18 @@ export function ChartLineLabelCustom() {
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 text-sm">
         <div className="flex gap-2 leading-none font-medium">
-          {analysis.direction === 'up' && (
-            <>Trending up by {analysis.percentage}% <TrendingUp className="h-4 w-4" /></>
+          {trend.direction === 'up' && (
+            <>Trending up by {trend.percentage}% <TrendingUp className="h-4 w-4" /></>
           )}
-          {analysis.direction === 'down' && (
-            <>Trending down by {analysis.percentage}% <TrendingUp className="h-4 w-4 rotate-180" /></>
+          {trend.direction === 'down' && (
+            <>Trending down by {trend.percentage}% <TrendingUp className="h-4 w-4" /></>
           )}
-          {analysis.direction === 'stable' && (
-            <>Stable trend with {analysis.volatility} volatility <TrendingUp className="h-4 w-4" /></>
+          {trend.direction === 'stable' && (
+            <>Fairly stable trend <TrendingUp className="h-4 w-4" /></>
           )}
         </div>
         <div className="text-muted-foreground leading-none">
-          Range: {analysis.valley} - {analysis.peak} | Based on your data
+          Range: {trend.range} | Based on your data
         </div>
       </CardFooter>
     </Card>

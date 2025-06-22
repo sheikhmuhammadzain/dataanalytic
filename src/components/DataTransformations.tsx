@@ -21,33 +21,13 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
   <button 
     onClick={onClick}
     disabled={disabled}
-    className={`${
+    className={`group relative inline-flex items-center gap-2 px-3 py-2 text-sm font-medium ${
       variant === 'danger' 
-        ? 'bg-red-50 hover:bg-red-100 border-red-200' 
-        : 'bg-gray-100 hover:bg-gray-200 border-gray-200'
-    } no-underline group cursor-pointer relative shadow-sm border rounded-full p-px text-xs font-semibold leading-6 ${
-      variant === 'danger' ? 'text-red-700' : 'text-gray-700'
-    } inline-block transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        ? 'text-red-700 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300' 
+        : 'text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+    } rounded-lg transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
   >
-    <span className="absolute inset-0 overflow-hidden rounded-full">
-      <span className={`absolute inset-0 rounded-full ${
-        variant === 'danger' 
-          ? 'bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(239,68,68,0.1)_0%,rgba(239,68,68,0)_75%)]'
-          : 'bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(59,130,246,0.1)_0%,rgba(59,130,246,0)_75%)]'
-      } opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
-    </span>
-    <div className={`relative flex space-x-2 items-center z-10 rounded-full bg-white py-0.5 px-4 ring-1 ${
-      variant === 'danger' 
-        ? 'ring-red-200 group-hover:ring-red-300' 
-        : 'ring-gray-200 group-hover:ring-blue-300'
-    }`}>
-      {children}
-    </div>
-    <span className={`absolute -bottom-0 left-[1.125rem] h-px w-[calc(100%-2.25rem)] bg-gradient-to-r ${
-      variant === 'danger'
-        ? 'from-red-400/0 via-red-400/50 to-red-400/0'
-        : 'from-blue-400/0 via-blue-400/50 to-blue-400/0'
-    } transition-opacity duration-500 group-hover:opacity-40`} />
+    {children}
   </button>
 );
 
@@ -176,13 +156,13 @@ export const DataTransformations: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <PremiumButton
             onClick={handleSort}
             disabled={!selectedColumn}
           >
-            <ArrowUpDown className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-            <span className="text-gray-700 group-hover:text-blue-700">Sort {sortOrder === 'asc' ? 'Ascending' : 'Descending'}</span>
+            <ArrowUpDown className="h-4 w-4" />
+            Sort {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
           </PremiumButton>
 
           <PremiumButton
@@ -190,20 +170,20 @@ export const DataTransformations: React.FC = () => {
             disabled={!selectedColumn}
             variant="danger"
           >
-            <Trash2 className="h-4 w-4 mr-2 text-red-500 group-hover:text-red-600" />
-            <span className="text-red-700 group-hover:text-red-800">Delete Column</span>
+            <Trash2 className="h-4 w-4" />
+            Delete Column
           </PremiumButton>
 
           <PremiumButton
             onClick={handleCombineColumns}
             disabled={!selectedColumn}
           >
-            <Calculator className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-            <span className="text-gray-700 group-hover:text-blue-700">Combine Columns</span>
+            <Calculator className="h-4 w-4" />
+            Combine Columns
           </PremiumButton>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={filterValue}
@@ -215,19 +195,19 @@ export const DataTransformations: React.FC = () => {
             onClick={handleFilter}
             disabled={!selectedColumn || !filterValue}
           >
-            <Filter className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-            <span className="text-gray-700 group-hover:text-blue-700">Apply Filter</span>
+            <Filter className="h-4 w-4" />
+            Apply Filter
           </PremiumButton>
         </div>
 
-        <div className="flex gap-3 ml-auto">
+        <div className="flex gap-2 ml-auto">
           <PremiumButton onClick={undoTransformation}>
-            <RotateCcw className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-            <span className="text-gray-700 group-hover:text-blue-700">Undo</span>
+            <RotateCcw className="h-4 w-4" />
+            Undo
           </PremiumButton>
           <PremiumButton onClick={redoTransformation}>
-            <RotateCw className="h-4 w-4 mr-2 text-gray-500 group-hover:text-blue-600" />
-            <span className="text-gray-700 group-hover:text-blue-700">Redo</span>
+            <RotateCw className="h-4 w-4" />
+            Redo
           </PremiumButton>
         </div>
       </div>

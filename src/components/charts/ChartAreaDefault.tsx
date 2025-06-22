@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, ResponsiveContainer } from "recharts"
 import { useMemo } from "react"
 import { useDataStore } from "../../store/dataStore"
+import { ChartExplanation } from "../ChartExplanation"
 
 import {
   Card,
@@ -92,7 +93,7 @@ export function ChartAreaDefault() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Area Chart</CardTitle>
+          <CardTitle>Data Trends Analysis</CardTitle>
           <CardDescription>
             Upload CSV data to visualize trends over time
           </CardDescription>
@@ -121,11 +122,17 @@ export function ChartAreaDefault() {
   }, [chartData, yAxisKey]);
 
   return (
-    <Card>
+    <Card className="relative">
+      <ChartExplanation
+        chartType="Area Chart"
+        dataKeys={{ xAxisKey, yAxisKey }}
+        chartData={chartData}
+        insights={{ trend }}
+      />
       <CardHeader>
-        <CardTitle>Area Chart</CardTitle>
+        <CardTitle>{yAxisKey.replace(/_/g, ' ')} Trends Across {xAxisKey.replace(/_/g, ' ')}</CardTitle>
         <CardDescription>
-          Showing {yAxisKey} trends across {xAxisKey}
+          Showing {yAxisKey.replace(/_/g, ' ').toLowerCase()} trends across {xAxisKey.replace(/_/g, ' ').toLowerCase()}
         </CardDescription>
       </CardHeader>
       <CardContent>

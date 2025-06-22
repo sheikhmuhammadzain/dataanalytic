@@ -19,67 +19,67 @@ interface Message {
 
 // --- Helper Functions ---
 
-// Improved Markdown Formatter with better styling
+// Improved Markdown Formatter with clean white theme styling
 const formatMessageContent = (content: string) => {
   let formattedContent = content;
 
   // Headers (### and ##)
   formattedContent = formattedContent.replace(
     /###\s*(.*?)(?:\n|$)/g,
-    '<h3 class="text-lg font-bold text-white mt-4 mb-2 border-b border-zinc-600/30 pb-1 break-words">$1</h3>'
+    '<h3 class="text-lg font-semibold text-gray-900 mt-4 mb-2 border-b border-gray-200 pb-1 break-words">$1</h3>'
   );
   
   formattedContent = formattedContent.replace(
     /##\s*(.*?)(?:\n|$)/g,
-    '<h2 class="text-xl font-bold text-white mt-4 mb-3 break-words">$1</h2>'
+    '<h2 class="text-xl font-semibold text-gray-900 mt-4 mb-3 break-words">$1</h2>'
   );
 
   // Bold (**text**)
   formattedContent = formattedContent.replace(
     /\*\*(.*?)\*\*/g,
-    '<strong class="font-semibold text-white bg-zinc-700/30 px-1 py-0.5 rounded break-words">$1</strong>'
+    '<strong class="font-medium text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded break-words">$1</strong>'
   );
 
   // Code blocks (```code```)
   formattedContent = formattedContent.replace(
     /```([\s\S]*?)```/g,
-    '<div class="bg-zinc-800/50 border border-zinc-600/30 rounded-lg p-3 my-3 font-mono text-sm overflow-x-auto break-all"><code class="text-green-300 whitespace-pre-wrap">$1</code></div>'
+    '<div class="bg-gray-50 border border-gray-200 rounded-lg p-3 my-3 font-mono text-sm overflow-x-auto break-all"><code class="text-gray-800 whitespace-pre-wrap">$1</code></div>'
   );
 
   // Inline code (`code`)
   formattedContent = formattedContent.replace(
     /`([^`]+)`/g,
-    '<code class="bg-zinc-700/50 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono break-words">$1</code>'
+    '<code class="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono break-words">$1</code>'
   );
 
   // Numbered lists (1. item)
   formattedContent = formattedContent.replace(
     /^\s*(\d+)\.\s+(.*)/gm,
-    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-6 h-6 bg-indigo-500/20 text-indigo-300 rounded-full flex items-center justify-center text-xs font-semibold mt-0.5">$1</span><span class="text-zinc-200 flex-1 leading-relaxed">$2</span></div>'
+    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-6 h-6 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">$1</span><span class="text-gray-700 flex-1 leading-relaxed">$2</span></div>'
   );
 
   // Unordered lists (- item or • item)
   formattedContent = formattedContent.replace(
     /^\s*[-•]\s+(.*)/gm,
-    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-2 h-2 bg-indigo-400 rounded-full mt-2"></span><span class="text-zinc-200 flex-1 leading-relaxed">$1</span></div>'
+    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></span><span class="text-gray-700 flex-1 leading-relaxed">$1</span></div>'
   );
 
   // Key-value pairs (key: value)
   formattedContent = formattedContent.replace(
     /^\s*([A-Za-z\s]+):\s*([^\n]+)/gm,
-    '<div class="flex flex-col sm:flex-row gap-1 sm:gap-2 my-1 break-words"><span class="font-medium text-indigo-300 flex-shrink-0">$1:</span><span class="text-zinc-200 flex-1">$2</span></div>'
+    '<div class="flex flex-col sm:flex-row gap-1 sm:gap-2 my-1 break-words"><span class="font-medium text-blue-600 flex-shrink-0">$1:</span><span class="text-gray-700 flex-1">$2</span></div>'
   );
 
   // Statistics formatting (numbers with %)
   formattedContent = formattedContent.replace(
     /(\d+(?:\.\d+)?%)/g,
-    '<span class="font-semibold text-green-400 bg-green-400/10 px-1 py-0.5 rounded whitespace-nowrap">$1</span>'
+    '<span class="font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded whitespace-nowrap">$1</span>'
   );
 
   // Large numbers formatting
   formattedContent = formattedContent.replace(
     /\b(\d{1,3}(?:,\d{3})+|\d{4,})\b/g,
-    '<span class="font-semibold text-blue-300 whitespace-nowrap">$1</span>'
+    '<span class="font-medium text-blue-600 whitespace-nowrap">$1</span>'
   );
 
   // Newlines to line breaks
@@ -105,30 +105,31 @@ const formatMessageContent = (content: string) => {
 
 // --- Sub-Components ---
 
-// Enhanced Typing Indicator Component with better animation
+// Enhanced Typing Indicator Component with polished styling
 const TypingIndicator: React.FC = () => (
-  <div className="flex items-center space-x-1.5 py-2">
-    <span className="text-zinc-400 text-sm mr-2">AI is thinking</span>
+  <div className="flex items-center space-x-2 py-3 px-1">
+    <span className="text-gray-400 text-sm font-medium">AI is thinking</span>
     <div className="flex space-x-1">
-      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+      <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-bounce [animation-delay:-0.3s] shadow-sm"></div>
+      <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-bounce [animation-delay:-0.15s] shadow-sm"></div>
+      <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-bounce shadow-sm"></div>
     </div>
   </div>
 );
 
 // Enhanced Streaming Indicator for when content is being typed
 const StreamingIndicator: React.FC = () => (
-  <div className="inline-flex items-center gap-2 ml-2 opacity-60">
+  <div className="inline-flex items-center gap-2 ml-2 opacity-70">
+    <span className="text-xs text-gray-400 font-medium">Generating</span>
     <div className="flex space-x-1">
-      <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
-      <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
-      <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse"></div>
+      <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+      <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
+      <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-pulse"></div>
     </div>
   </div>
 );
 
-// Enhanced Message Item Component with improved styling
+// Enhanced Message Item Component with clean white theme
 interface MessageItemProps {
   message: Message;
 }
@@ -142,7 +143,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15, scale: 0.95 }}
+      initial={{ opacity: 0, y:15, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ 
         duration: 0.3, 
@@ -155,27 +156,27 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
     >
       {/* Avatar for AI messages */}
       {!isUser && (
-        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg ring-2 ring-blue-500/20">
           <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
         </div>
       )}
 
       <div
         className={cn(
-          "relative w-full max-w-[90%] sm:max-w-[85%] md:max-w-[80%] rounded-2xl shadow-lg backdrop-blur-sm transition-all duration-200 overflow-hidden",
+          "relative w-full max-w-[90%] sm:max-w-[85%] md:max-w-[80%] rounded-2xl transition-all duration-300 overflow-hidden backdrop-blur-sm",
           isUser
-            ? "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white ml-4 sm:ml-8 md:ml-12"
+            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white ml-4 sm:ml-8 md:ml-12 shadow-lg shadow-blue-500/20"
             : isError
-              ? "bg-gradient-to-br from-red-500/20 to-red-600/20 text-red-100 border border-red-500/30"
-              : "bg-gradient-to-br from-zinc-800/90 to-zinc-900/90 text-zinc-100 border border-zinc-700/50",
-          isStreaming && "animate-pulse-subtle"
+              ? "bg-gradient-to-br from-red-50 to-red-100 text-red-800 border border-red-200 shadow-md shadow-red-500/10"
+              : "bg-white/95 text-gray-800 border border-gray-200/80 shadow-lg shadow-gray-900/5 hover:shadow-xl hover:shadow-gray-900/10",
+          isStreaming && "animate-pulse-subtle ring-1 ring-blue-500/20"
         )}
       >
         {/* Error indicator */}
         {isError && (
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-red-500/20">
-            <AlertTriangle className="h-4 w-4 flex-shrink-0 text-red-400" />
-            <span className="font-medium text-sm text-red-300">Error occurred</span>
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-red-200">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0 text-red-500" />
+            <span className="font-medium text-sm text-red-700">Error occurred</span>
           </div>
         )}
 
@@ -187,28 +188,28 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
           {message.content ? (
             <div className={cn(
               "text-sm leading-relaxed w-full min-w-0 overflow-hidden",
-              isUser ? "text-white" : "text-zinc-100"
+              isUser ? "text-white" : "text-gray-800"
             )}>
               {formatMessageContent(message.content)}
             </div>
           ) : isStreaming ? (
             <TypingIndicator />
           ) : (
-            <div className="text-zinc-400 italic text-sm">No response content</div>
+            <div className="text-gray-500 italic text-sm">No response content</div>
           )}
 
           {/* Streaming indicator */}
           {isStreaming && message.content && (
-            <div className="mt-2 pt-2 border-t border-zinc-600/30">
+            <div className="mt-2 pt-2 border-t border-gray-200">
               <StreamingIndicator />
             </div>
           )}
         </div>
 
-        {/* Message timestamp (optional) */}
+        {/* Message timestamp */}
         <div className={cn(
-          "px-4 pb-2 text-xs opacity-60",
-          isUser ? "text-indigo-100" : "text-zinc-400"
+          "px-4 pb-2 text-xs opacity-50 font-medium",
+          isUser ? "text-blue-100" : "text-gray-400"
         )}>
           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
@@ -218,15 +219,15 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({ message }) => {
           className={cn(
             "absolute top-4 w-3 h-3 transform rotate-45",
             isUser
-              ? "-right-1.5 bg-gradient-to-br from-indigo-600 to-indigo-700"
-              : "-left-1.5 bg-gradient-to-br from-zinc-800/90 to-zinc-900/90 border-l border-t border-zinc-700/50"
+              ? "-right-1.5 bg-gradient-to-br from-blue-500 to-blue-600"
+              : "-left-1.5 bg-white/95 border-l border-t border-gray-200/80"
           )}
         />
       </div>
 
       {/* Avatar for user messages */}
       {isUser && (
-        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-lg ring-2 ring-white/20">
           <span className="text-white text-xs sm:text-sm font-semibold">U</span>
         </div>
       )}
@@ -556,31 +557,31 @@ The user is asking questions about this dataset. Please provide accurate, data-d
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
             className={cn(
-              "fixed bottom-0 right-0 z-[100] flex flex-col border border-zinc-700/50 bg-zinc-900/80 shadow-2xl backdrop-blur-lg", // Use zinc, increase z-index
-              "md:bottom-6 md:right-6 md:rounded-xl", // Adjust positioning and rounding
-              "overflow-hidden", // Important for containing content
+              "fixed bottom-0 right-0 z-[100] flex flex-col border border-gray-200/60 bg-white/95 backdrop-blur-xl",
+              "md:bottom-6 md:right-6 md:rounded-2xl",
+              "overflow-hidden ring-1 ring-gray-900/5",
               isExpanded
-                ? "h-[calc(100svh-1rem)] w-[calc(100vw-1rem)] md:h-[75vh] md:w-[600px]" // Use almost full screen on mobile
-                : "h-[70vh] w-[calc(100vw-1rem)] md:h-[550px] md:w-[450px]" // More width on mobile
+                ? "h-[calc(100svh-1rem)] w-[calc(100vw-1rem)] md:h-[75vh] md:w-[600px]"
+                : "h-[70vh] w-[calc(100vw-1rem)] md:h-[550px] md:w-[450px]"
             )}
             style={{
-                boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.3), 0 5px 15px -10px rgba(79, 70, 229, 0.2)', // Softer shadow + accent glow
+                boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(255 255 255 / 0.05)',
             }}
           >
             {/* Header */}
-            <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-zinc-700/50 p-4 bg-gradient-to-r from-zinc-800/95 to-zinc-900/95 backdrop-blur-sm sticky top-0 z-10">
+            <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-gray-200/60 p-4 bg-gradient-to-r from-gray-50/90 to-white/90 backdrop-blur-xl sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg ring-2 ring-blue-500/20">
                     <Bot className="h-5 w-5 text-white" />
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-zinc-800 flex items-center justify-center">
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 border-2 border-white flex items-center justify-center shadow-md">
                     <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Data Analyst AI</h3>
-                  <p className="text-xs text-zinc-400">Powered by Qubit Dynamics • Online</p>
+                  <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Data Analyst AI</h3>
+                  <p className="text-xs text-gray-500 font-medium">Powered by Qubit Dynamics • <span className="text-emerald-500">Online</span></p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -588,7 +589,7 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                   onClick={() => setIsExpanded(!isExpanded)}
                   title={isExpanded ? "Collapse Chat" : "Expand Chat"}
                   aria-label={isExpanded ? "Collapse Chat" : "Expand Chat"}
-                  className="p-2 text-zinc-400 hover:text-white transition-all duration-200 rounded-lg hover:bg-zinc-700/50 group"
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100/80 group backdrop-blur-sm"
                 >
                   <ChevronDown className={cn(
                     "h-4 w-4 transition-all duration-300 group-hover:scale-110", 
@@ -599,7 +600,7 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                   onClick={() => setIsOpen(false)}
                   title="Close Chat"
                   aria-label="Close Chat"
-                  className="p-2 text-zinc-400 hover:text-white transition-all duration-200 rounded-lg hover:bg-zinc-700/50 hover:bg-red-500/20 group"
+                  className="p-2 text-gray-400 hover:text-red-500 transition-all duration-200 rounded-lg hover:bg-red-50/80 group backdrop-blur-sm"
                 >
                   <X className="h-4 w-4 transition-all duration-200 group-hover:scale-110" />
                 </button>
@@ -609,7 +610,11 @@ The user is asking questions about this dataset. Please provide accurate, data-d
             {/* Messages Area */}
             <div 
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto py-2 space-y-1 scroll-smooth scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent"
+              className="flex-1 overflow-y-auto py-2 space-y-1 scroll-smooth bg-gray-50/30"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#e5e7eb transparent'
+              }}
             >
               
               <AnimatePresence mode="popLayout">
@@ -626,10 +631,10 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                   exit={{ opacity: 0, y: -20 }}
                   className="flex items-center gap-3 px-4 py-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
-                  <div className="bg-gradient-to-br from-zinc-800/90 to-zinc-900/90 rounded-2xl px-4 py-3 border border-zinc-700/50">
+                  <div className="bg-white rounded-2xl px-4 py-3 border border-gray-200 shadow-sm">
                     <TypingIndicator />
                   </div>
                 </motion.div>
@@ -637,7 +642,7 @@ The user is asking questions about this dataset. Please provide accurate, data-d
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-zinc-700/50 bg-gradient-to-r from-zinc-800/80 to-zinc-900/80 backdrop-blur-sm">
+            <div className="border-t border-gray-200 bg-white">
               {/* Quick Questions (show only when no messages or just welcome message) */}
               {messages.length <= 1 && processedData && (
                 <div className="p-4 pb-2">
@@ -653,10 +658,9 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                         disabled={isLoading}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group px-3 py-2 text-xs bg-gradient-to-r from-zinc-700/60 to-zinc-600/60 hover:from-indigo-600/60 hover:to-purple-600/60 text-zinc-300 hover:text-white rounded-lg transition-all duration-200 border border-zinc-600/30 hover:border-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                        className="group px-3 py-2 text-xs bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-lg transition-all duration-200 border border-gray-200 hover:border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span className="relative z-10">{question}</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/20 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg" />
                       </motion.button>
                     ))}
                   </div>
@@ -673,10 +677,10 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                       onKeyDown={handleKeyDown}
                       placeholder="Ask me anything about your data..."
                       disabled={isLoading}
-                      className="w-full resize-none rounded-xl border border-zinc-600/50 bg-zinc-800/60 backdrop-blur-sm px-4 py-3 pr-12 text-sm text-zinc-100 placeholder-zinc-400 focus:border-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 min-h-[44px] max-h-[120px] transition-all duration-200"
+                      className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 min-h-[44px] max-h-[120px] transition-all duration-200"
                       rows={1}
                     />
-                    <div className="absolute right-3 bottom-3 text-xs text-zinc-500">
+                    <div className="absolute right-3 bottom-3 text-xs text-gray-400">
                       {input.length}/1000
                     </div>
                   </div>
@@ -685,7 +689,7 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                     disabled={!input.trim() || isLoading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white transition-all duration-200 hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center shadow-lg group"
+                    className="flex-shrink-0 w-11 h-11 rounded-xl bg-blue-500 text-white transition-all duration-200 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center shadow-sm group"
                   >
                     {isLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -696,10 +700,10 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                 </form>
                 
                 {/* Helper text */}
-                <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
+                <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                   <span>Press Shift+Enter for new line</span>
                   <span className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     AI Ready
                   </span>
                 </div>
@@ -720,18 +724,18 @@ The user is asking questions about this dataset. Please provide accurate, data-d
           onClick={() => setIsOpen(true)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="group relative w-14 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center animate-float"
+          className="group relative w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
         >
           {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-300 animate-glow" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full blur-lg opacity-30 group-hover:opacity-40 transition-opacity duration-300" />
           
           {/* Icon */}
           <div className="relative">
             <MessageSquare className="h-6 w-6 text-white transition-transform group-hover:scale-110" />
             
             {/* Notification dot */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white animate-pulse">
-              <div className="w-full h-full bg-emerald-400 rounded-full animate-ping" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse">
+              <div className="w-full h-full bg-green-400 rounded-full animate-ping" />
             </div>
           </div>
         </motion.button>

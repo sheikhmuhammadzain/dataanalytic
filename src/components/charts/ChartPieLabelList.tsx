@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react"
 import { LabelList, Pie, PieChart, ResponsiveContainer } from "recharts"
 import { useMemo } from "react"
 import { useDataStore } from "../../store/dataStore"
+import { ChartExplanation } from "../ChartExplanation"
 
 import {
   Card,
@@ -20,7 +21,7 @@ import {
   ChartTooltipContent,
 } from "../ui/chart"
 
-export const description = "A dynamic pie chart with label list based on your CSV data"
+export const description = "A dynamic pie chart with labels based on your CSV data"
 
 const PIE_COLORS = [
   "hsl(220 70% 50%)", // chart-1
@@ -147,7 +148,7 @@ export function ChartPieLabelList() {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Pie Chart - Label List</CardTitle>
+          <CardTitle>Category Distribution Analysis</CardTitle>
           <CardDescription>
             Upload CSV data to visualize category distribution
           </CardDescription>
@@ -162,11 +163,17 @@ export function ChartPieLabelList() {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col relative">
+      <ChartExplanation
+        chartType="Pie Chart"
+        dataKeys={{ categoryKey, valueKey }}
+        chartData={chartData}
+        insights={insights}
+      />
       <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart - Label List</CardTitle>
+        <CardTitle>{categoryKey.replace(/_/g, ' ')} Distribution by {valueKey.replace(/_/g, ' ')}</CardTitle>
         <CardDescription>
-          {categoryKey} distribution by {valueKey}
+          {categoryKey.replace(/_/g, ' ').toLowerCase()} distribution by {valueKey.replace(/_/g, ' ').toLowerCase()}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
@@ -201,10 +208,10 @@ export function ChartPieLabelList() {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 leading-none font-medium">
-          {insights.dominantPercentage > 50 ? (
-            <>"{insights.dominantCategory}" dominates ({insights.dominantPercentage}%) <TrendingUp className="h-4 w-4" /></>
+          {insights.distribution === 'diverse' ? (
+            <>Well distributed across categories <TrendingUp className="h-4 w-4" /></>
           ) : (
-            <>{insights.distribution === 'diverse' ? 'Well distributed data' : 'Concentrated distribution'} <TrendingUp className="h-4 w-4" /></>
+            <>"{insights.dominantCategory}" dominates with {insights.dominantPercentage}% <TrendingUp className="h-4 w-4" /></>
           )}
         </div>
         <div className="text-muted-foreground leading-none">

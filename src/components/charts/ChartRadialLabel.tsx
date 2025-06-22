@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react"
 import { LabelList, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts"
 import { useMemo } from "react"
 import { useDataStore } from "../../store/dataStore"
+import { ChartExplanation } from "../ChartExplanation"
 
 import {
   Card,
@@ -23,8 +24,8 @@ import {
 export const description = "A dynamic radial chart with labels based on your CSV data"
 
 const RADIAL_COLORS = [
-  "hsl(220 70% 50%)", // chart-1
-  "hsl(160 60% 45%)", // chart-2  
+  "hsl(220 70% 50%)", // chart-1  
+  "hsl(160 60% 45%)", // chart-2
   "hsl(30 80% 55%)",  // chart-3
   "hsl(280 65% 60%)", // chart-4
   "hsl(340 75% 55%)", // chart-5
@@ -147,7 +148,7 @@ export function ChartRadialLabel() {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Radial Chart - Label</CardTitle>
+          <CardTitle>Top Categories Analysis</CardTitle>
           <CardDescription>
             Upload CSV data to visualize proportional relationships
           </CardDescription>
@@ -162,11 +163,17 @@ export function ChartRadialLabel() {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col relative">
+      <ChartExplanation
+        chartType="Radial Chart"
+        dataKeys={{ categoryKey, valueKey }}
+        chartData={chartData}
+        insights={insights}
+      />
       <CardHeader className="items-center pb-0">
-        <CardTitle>Radial Chart - Label</CardTitle>
+        <CardTitle>Top {chartData.length} {categoryKey.replace(/_/g, ' ')} by {valueKey.replace(/_/g, ' ')}</CardTitle>
         <CardDescription>
-          Top {chartData.length} {categoryKey} by {valueKey}
+          Top {chartData.length} {categoryKey.replace(/_/g, ' ').toLowerCase()} by {valueKey.replace(/_/g, ' ').toLowerCase()}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
@@ -186,7 +193,7 @@ export function ChartRadialLabel() {
                 cursor={false}
                 content={<ChartTooltipContent hideLabel nameKey={categoryKey} />}
               />
-              <RadialBar 
+              <RadialBar
                 dataKey="normalizedValue" 
                 background
                 cornerRadius={4}
