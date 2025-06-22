@@ -13,6 +13,7 @@ import {
   Brain,
   Zap
 } from 'lucide-react';
+import { llmMonitor, type LLMMetrics } from '../services/llmMonitor';
 
 interface ETLStatusMonitorProps {
   theme: 'dark' | 'light';
@@ -36,6 +37,7 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [systemUptime, setSystemUptime] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [llmMetrics, setLlmMetrics] = useState<LLMMetrics | null>(null);
 
   // Calculate real stats from application data
   const totalRecords = processedData?.summary?.rowCount || 0;
@@ -72,14 +74,19 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
   const storageLimit = 5120; // 5MB in KB (more realistic limit)
   const storagePercentage = (totalStorageUsed / storageLimit) * 100;
 
-  // Dynamic LLM Status based on processing state and recent activity
-  const llmStatus = isProcessing ? 'Processing' : 
-                   processedData ? 'Ready' : 
-                   uploadedFiles.length > 0 ? 'Standby' : 'Offline';
+  // Dynamic LLM Status based on real AI monitoring data
+  const llmStatus = llmMetrics ? 
+    (llmMetrics.currentStatus === 'busy' ? 'Processing' :
+     llmMetrics.currentStatus === 'healthy' ? 'Ready' :
+     llmMetrics.currentStatus === 'standby' ? 'Standby' :
+     llmMetrics.currentStatus === 'error' ? 'Error' : 'Offline') : 'Offline';
   
-  const apiConnection = isProcessing ? 'Processing via DeepSeek API' : 
-                       processedData ? 'DeepSeek API Connected' : 
-                       'DeepSeek API Standby';
+  const apiConnection = llmMetrics ? 
+    (llmMetrics.currentStatus === 'busy' ? `Processing via Gemini API (${llmMonitor.getActiveCalls()} active)` :
+     llmMetrics.currentStatus === 'healthy' ? `Gemini API Connected (Health: ${Math.round(llmMetrics.apiHealthScore)}%)` :
+     llmMetrics.currentStatus === 'standby' ? 'Gemini API Standby' :
+     llmMetrics.currentStatus === 'error' ? `Gemini API Error (${llmMetrics.recentErrors.length} recent)` :
+     'Gemini API Offline') : 'Gemini API Not Configured';
 
   // System Health based on real conditions
   const dataPipelineStatus = isProcessing ? 'Processing' :
@@ -90,9 +97,11 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
                              storagePercentage > 80 ? 'Warning' :
                              storagePercentage > 60 ? 'Good' : 'Healthy';
   
-  const apiConnectionStatus = isProcessing ? 'Processing' :
-                             processedData ? 'Connected' : 
-                             'Standby';
+  const apiConnectionStatus = llmMetrics ? 
+                             (llmMetrics.currentStatus === 'busy' ? 'Processing' :
+                              llmMetrics.currentStatus === 'healthy' ? 'Connected' :
+                              llmMetrics.currentStatus === 'error' ? 'Error' :
+                              'Standby') : 'Offline';
 
   // Calculate processing performance
   const recentTransformations = transformationHistory.filter(t => {
@@ -102,10 +111,9 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
     return transformDate >= hourAgo;
   });
 
-  const processingRate = recentTransformations.length > 0 ? 
-    Math.round(recentTransformations.reduce((sum, t) => sum + (t.data?.summary?.rowCount || 0), 0) / 60) : 0;
-
-  const pendingItems = isProcessing ? 1 : 0;
+  // Use real LLM metrics for processing rate
+  const processingRate = llmMetrics ? llmMetrics.callsLastHour : 0;
+  const pendingItems = llmMetrics ? llmMonitor.getActiveCalls() : 0;
 
   // Calculate reports generated today
   const reportsToday = generatedReports.filter(report => {
@@ -143,10 +151,26 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
     return () => clearInterval(interval);
   }, [uploadedFiles.length]);
 
+  // Subscribe to LLM metrics updates
+  useEffect(() => {
+    const unsubscribe = llmMonitor.subscribe((metrics) => {
+      setLlmMetrics(metrics);
+    });
+
+    return unsubscribe;
+  }, []);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setLastRefresh(new Date());
-    // Simulate refresh delay
+    
+    // Test API health as part of refresh
+    try {
+      await llmMonitor.testApiHealth();
+    } catch (error) {
+      console.warn('API health check failed during refresh:', error);
+    }
+    
     setTimeout(() => {
       setIsRefreshing(false);
     }, 1000);
@@ -199,12 +223,14 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
             <div className={`w-2 h-2 rounded-full ${
               llmStatus === 'Processing' ? 'bg-blue-500 animate-pulse' :
               llmStatus === 'Ready' ? 'bg-green-500' : 
-              llmStatus === 'Standby' ? 'bg-yellow-500' : 'bg-red-500'
+              llmStatus === 'Standby' ? 'bg-yellow-500' : 
+              llmStatus === 'Error' ? 'bg-red-500 animate-pulse' : 'bg-gray-500'
             }`}></div>
             <span className={`font-medium ${
               llmStatus === 'Processing' ? 'text-blue-500' :
               llmStatus === 'Ready' ? 'text-green-500' : 
-              llmStatus === 'Standby' ? 'text-yellow-500' : 'text-red-500'
+              llmStatus === 'Standby' ? 'text-yellow-500' : 
+              llmStatus === 'Error' ? 'text-red-500' : 'text-gray-500'
             }`}>
               {llmStatus}
             </span>
@@ -276,11 +302,16 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
           
           <div className="mb-6">
             <p className={`text-sm font-medium ${getThemeClass('text-zinc-300', 'text-gray-700')} mb-2`}>
-              Processing Rate
+              AI Processing Rate
             </p>
             <p className={`text-3xl font-bold ${getThemeClass('text-white', 'text-gray-900')}`}>
-              {processingRate} rec/min
+              {processingRate} calls/hr
             </p>
+            {llmMetrics && (
+              <p className={`text-sm ${getThemeClass('text-zinc-400', 'text-gray-600')} mt-1`}>
+                Avg response: {llmMetrics.averageResponseTime}ms
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -315,6 +346,29 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
               </div>
             </div>
           </div>
+          
+          {/* AI Call Types Breakdown */}
+          {llmMetrics && (
+            <div className="mt-4">
+              <h4 className={`text-sm font-medium ${getThemeClass('text-zinc-300', 'text-gray-700')} mb-3`}>
+                AI Activity (Last Hour)
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(llmMonitor.getCallsByType()).map(([type, count]) => (
+                  <div key={type} className={`p-2 rounded ${getThemeClass('bg-zinc-700', 'bg-white border border-gray-200')}`}>
+                    <div className="flex justify-between items-center">
+                      <span className={`text-xs ${getThemeClass('text-zinc-400', 'text-gray-600')} capitalize`}>
+                        {type.replace('_', ' ')}
+                      </span>
+                      <span className={`text-sm font-bold ${getThemeClass('text-white', 'text-gray-900')}`}>
+                        {count}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* System Health */}
@@ -330,7 +384,12 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
             {[
               { label: 'Data Pipeline', status: dataPipelineStatus },
               { label: 'Storage System', status: storageSystemStatus },
-              { label: 'API Connections', status: apiConnectionStatus }
+              { label: 'API Connections', status: apiConnectionStatus },
+              ...(llmMetrics ? [{ 
+                label: `AI Service (${Math.round(llmMetrics.apiHealthScore)}% Health)`, 
+                status: llmMetrics.currentStatus === 'healthy' || llmMetrics.currentStatus === 'busy' ? 'Connected' : 
+                        llmMetrics.currentStatus === 'error' ? 'Error' : 'Standby'
+              }] : [])
             ].map((item, index) => (
               <div key={index} className="flex items-center justify-between">
                 <span className={`${getThemeClass('text-zinc-300', 'text-gray-700')}`}>

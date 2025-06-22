@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { llmMonitor } from './llmMonitor';
 
 export async function getChatCompletion(
   prompt: string,
@@ -9,6 +10,8 @@ export async function getChatCompletion(
   // Optional: Callback for errors during streaming
   onError?: (error: Error) => void
 ) {
+  const callId = llmMonitor.startCall('chat');
+  
   try {
     console.log('Starting chat completion stream request');
     
@@ -102,6 +105,7 @@ Provide a helpful response (either an answer or clarifying questions):`;
       }
       
       console.log('Stream finished');
+      llmMonitor.completeCall(callId);
       onComplete?.();
     } else {
       // Fallback to non-streaming API with simulated streaming
@@ -131,6 +135,7 @@ Provide a helpful response (either an answer or clarifying questions):`;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
       
+      llmMonitor.completeCall(callId);
       onComplete?.();
     }
   } catch (error) {
@@ -152,6 +157,7 @@ Provide a helpful response (either an answer or clarifying questions):`;
     }
     
     const enhancedError = new Error(`Chat completion failed: ${errorMessage}`);
+    llmMonitor.failCall(callId, errorMessage);
     
     // Use the error callback if provided, otherwise throw
     if (onError) {
@@ -175,6 +181,8 @@ function splitIntoChunks(text: string, maxWords: number): string[] {
 }
 
 export async function generateSyntheticPaintsData(): Promise<Record<string, string | number | null>[]> {
+  const callId = llmMonitor.startCall('synthetic_data');
+  
   try {
     console.log('Generating synthetic paints company data...');
     
@@ -254,10 +262,12 @@ Generate the complete dataset now:`;
     }
     
     console.log(`Successfully generated ${data.length} rows of synthetic paints data`);
+    llmMonitor.completeCall(callId);
     return data;
     
   } catch (error) {
     console.error("Error generating synthetic data:", error);
+    llmMonitor.failCall(callId, error instanceof Error ? error.message : 'Unknown error');
     
     // Fallback data if AI generation fails
     console.log('Using fallback synthetic data...');
@@ -309,6 +319,8 @@ export async function generateChartExplanation(params: {
   insights?: any;
   dataSize: number;
 }): Promise<string> {
+  const callId = llmMonitor.startCall('explanation');
+  
   try {
     console.log('Generating chart explanation...');
     
@@ -350,10 +362,12 @@ Keep it under 200 words and use simple language that any business user would und
     const explanation = response.text();
     
     console.log('Chart explanation generated successfully');
+    llmMonitor.completeCall(callId);
     return explanation;
     
   } catch (error) {
     console.error('Error generating chart explanation:', error);
+    llmMonitor.failCall(callId, error instanceof Error ? error.message : 'Failed to generate chart explanation');
     throw new Error('Failed to generate chart explanation');
   }
 } 

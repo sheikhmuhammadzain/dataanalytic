@@ -2,6 +2,7 @@ import { ProcessedData } from '../store/dataStore';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { saveAs } from 'file-saver';
 import { marked } from 'marked';
+import { llmMonitor } from './llmMonitor';
 
 export interface ReportTemplate {
   id: string;
@@ -280,6 +281,8 @@ export async function generateReport(
   data: ProcessedData, 
   format: 'pdf' | 'html' | 'txt' = 'html'
 ): Promise<{ success: boolean; fileName?: string; error?: string }> {
+  const callId = llmMonitor.startCall('report');
+  
   try {
     const template = reportTemplates.find(t => t.id === templateId);
     if (!template) {
@@ -332,10 +335,12 @@ export async function generateReport(
     }
 
     saveAs(blob, fileName);
+    llmMonitor.completeCall(callId);
     return { success: true, fileName };
 
   } catch (error) {
     console.error('Error generating report:', error);
+    llmMonitor.failCall(callId, error instanceof Error ? error.message : 'Unknown error occurred');
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error occurred' 
