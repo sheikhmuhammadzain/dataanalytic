@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useDataStore } from '../store/dataStore';
 import { FileUpload } from './FileUpload';
+import { ETLStatusMonitor } from './ETLStatusMonitor';
 import { generateSyntheticPaintsData } from '../services/gemini';
 import { reportTemplates, generateReport, getAllReportTemplates } from '../services/reportTypes';
 
@@ -28,7 +29,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) => {
-  const { user, logout, processedData, uploadedFiles, setShowAdminPanel, addGeneratedReport, generatedReports, deleteGeneratedReport } = useDataStore();
+  const { user, logout, processedData, uploadedFiles, setShowAdminPanel, addGeneratedReport, generatedReports, deleteGeneratedReport, transformationHistory } = useDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingReportId, setGeneratingReportId] = useState<string | null>(null);
@@ -254,6 +255,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
               <Settings className={`w-5 h-5 ${getThemeClass('text-zinc-500', 'text-gray-400')}`} />
             </div>
           </div>
+        </motion.div>
+
+        {/* ETL Status Monitor */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          className="mb-12"
+        >
+          <ETLStatusMonitor 
+            theme={theme}
+            getThemeClass={getThemeClass}
+            processedData={processedData}
+            uploadedFiles={uploadedFiles}
+            generatedReports={generatedReports}
+            isProcessing={isLoading || isGenerating}
+            transformationHistory={transformationHistory}
+          />
         </motion.div>
 
         {/* Data Upload & ETL Pipeline Section */}
