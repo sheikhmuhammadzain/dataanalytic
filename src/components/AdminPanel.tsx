@@ -28,7 +28,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) => {
-  const { user, logout, processedData, uploadedFiles, setShowAdminPanel } = useDataStore();
+  const { user, logout, processedData, uploadedFiles, setShowAdminPanel, addGeneratedReport, generatedReports, deleteGeneratedReport } = useDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingReportId, setGeneratingReportId] = useState<string | null>(null);
@@ -80,8 +80,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
     setGeneratingReportId(reportTemplateId);
     try {
       const result = await generateReport(reportTemplateId, processedData, reportFormat);
-      if (result.success) {
+      if (result.success && result.fileName) {
         console.log(`Report generated successfully: ${result.fileName}`);
+        
+        // Find template info
+        const template = getAllReportTemplates().find(t => t.id === reportTemplateId);
+        
+        // Store report information
+        const reportInfo = {
+          id: Date.now().toString(),
+          name: `${template?.name || 'Report'} - ${new Date().toLocaleDateString()}`,
+          templateId: reportTemplateId,
+          templateName: template?.name || 'Unknown Template',
+          fileName: result.fileName,
+          format: reportFormat,
+          generatedDate: new Date().toISOString(),
+          dataRowCount: processedData.summary.rowCount,
+          dataColumnCount: processedData.summary.columnCount,
+          status: 'success' as const
+        };
+        
+        addGeneratedReport(reportInfo);
+        
+        // Show success message
+        alert(`Report "${reportInfo.name}" generated successfully!`);
       } else {
         alert(`Failed to generate report: ${result.error}`);
       }
@@ -101,6 +123,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
       
       // Save to localStorage
       localStorage.setItem('uploadedFiles', JSON.stringify(updatedFiles));
+    }
+  };
+
+  const handleDeleteReport = (reportId: string) => {
+    if (confirm('Are you sure you want to delete this report?')) {
+      deleteGeneratedReport(reportId);
     }
   };
 
@@ -623,16 +651,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
                   Recent Reports
                 </h3>
                 <div className="space-y-3">
-                  {/* Only show if there are actual reports generated - for now showing empty state */}
-                  <div className={`text-center py-8 ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
-                    <FileText className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                    <h4 className={`font-medium mb-1 ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
-                      No reports generated yet
-                    </h4>
-                    <p className="text-sm">
-                      Generate reports to see them here
-                    </p>
-                  </div>
+                  {generatedReports.length > 0 ? (
+                    generatedReports.slice(0, 3).map((report) => (
+                      <div 
+                        key={report.id}
+                        className={`p-4 rounded-lg ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-gray-50 border border-gray-200')}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${getThemeClass('bg-zinc-700', 'bg-white')}`}>
+                              <FileText className={`w-4 h-4 ${getThemeClass('text-zinc-400', 'text-gray-600')}`} />
+                            </div>
+                            <div>
+                              <h4 className={`font-medium ${getThemeClass('text-white', 'text-gray-900')}`}>
+                                {report.name}
+                              </h4>
+                              <p className={`text-sm ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
+                                {new Date(report.generatedDate).toLocaleDateString()} • {report.format.toUpperCase()} • {report.dataRowCount.toLocaleString()} rows
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              report.status === 'success'
+                                ? getThemeClass('bg-green-500/20 text-green-400', 'bg-green-100 text-green-700')
+                                : getThemeClass('bg-red-500/20 text-red-400', 'bg-red-100 text-red-700')
+                            }`}>
+                              {report.status === 'success' ? 'Ready' : 'Failed'}
+                            </span>
+                                                         <button
+                               onClick={() => handleDeleteReport(report.id)}
+                               className={`p-1 rounded ${getThemeClass('hover:bg-zinc-600 text-zinc-400 hover:text-red-400', 'hover:bg-red-50 text-gray-500 hover:text-red-600')} transition-colors`}
+                               title="Delete Report"
+                             >
+                               <Trash2 className="w-3 h-3" />
+                             </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={`text-center py-8 ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
+                      <FileText className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                      <h4 className={`font-medium mb-1 ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
+                        No reports generated yet
+                      </h4>
+                      <p className="text-sm">
+                        Generate reports to see them here
+                      </p>
+                    </div>
+                  )}
+                  
+                  {generatedReports.length > 3 && (
+                    <div className="text-center">
+                      <button className={`text-sm ${getThemeClass('text-zinc-400 hover:text-white', 'text-gray-600 hover:text-gray-900')} transition-colors`}>
+                        View all {generatedReports.length} reports
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -655,15 +732,69 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
             </p>
           </div>
 
-          <div className={`text-center py-12 ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
-            <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <h3 className={`font-medium mb-2 ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
-              No reports generated yet
-            </h3>
-            <p className="text-sm">
-              Upload data and generate reports to see them here
-            </p>
-          </div>
+          {generatedReports.length > 0 ? (
+            <div className="space-y-4">
+              {generatedReports.map((report) => (
+                <div 
+                  key={report.id}
+                  className={`flex items-center justify-between p-4 rounded-lg ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-gray-50 border border-gray-200')}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-lg ${getThemeClass('bg-zinc-700', 'bg-white')}`}>
+                      <FileText className={`w-5 h-5 ${getThemeClass('text-zinc-400', 'text-gray-600')}`} />
+                    </div>
+                    <div>
+                      <h4 className={`font-semibold ${getThemeClass('text-white', 'text-gray-900')}`}>
+                        {report.name}
+                      </h4>
+                      <p className={`text-sm ${getThemeClass('text-zinc-400', 'text-gray-600')} mb-1`}>
+                        Template: {report.templateName} • Format: {report.format.toUpperCase()}
+                      </p>
+                      <p className={`text-sm ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
+                        Generated: {new Date(report.generatedDate).toLocaleDateString()} at {new Date(report.generatedDate).toLocaleTimeString()} • {report.dataRowCount.toLocaleString()} rows × {report.dataColumnCount} columns
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 text-sm rounded-full font-medium ${
+                      report.status === 'success'
+                        ? getThemeClass('bg-green-500/20 text-green-400', 'bg-green-100 text-green-700')
+                        : getThemeClass('bg-red-500/20 text-red-400', 'bg-red-100 text-red-700')
+                    }`}>
+                      {report.status === 'success' ? 'Successfully Generated' : 'Generation Failed'}
+                    </span>
+                    
+                    <div className="flex items-center gap-1">
+                      <button
+                        className={`p-2 rounded-lg ${getThemeClass('hover:bg-zinc-600 text-zinc-400 hover:text-white', 'hover:bg-gray-200 text-gray-500 hover:text-gray-700')} transition-colors`}
+                        title="View Report Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                                             <button
+                         onClick={() => handleDeleteReport(report.id)}
+                         className={`p-2 rounded-lg ${getThemeClass('hover:bg-red-900 text-zinc-400 hover:text-red-400', 'hover:bg-red-50 text-gray-500 hover:text-red-600')} transition-colors`}
+                         title="Delete Report"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={`text-center py-12 ${getThemeClass('text-zinc-500', 'text-gray-500')}`}>
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <h3 className={`font-medium mb-2 ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
+                No reports generated yet
+              </h3>
+              <p className="text-sm">
+                Upload data and generate reports to see them here
+              </p>
+            </div>
+          )}
          </motion.div>
 
         {/* Management Section */}

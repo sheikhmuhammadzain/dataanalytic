@@ -46,6 +46,20 @@ interface UploadedFile {
   type: string;
 }
 
+export interface GeneratedReport {
+  id: string;
+  name: string;
+  templateId: string;
+  templateName: string;
+  fileName: string;
+  format: 'pdf' | 'html' | 'txt';
+  generatedDate: string;
+  dataRowCount: number;
+  dataColumnCount: number;
+  size?: string;
+  status: 'success' | 'failed';
+}
+
 interface DataStore {
   rawData: Record<string, string | number | null>[] | null;
   processedData: ProcessedData | null;
@@ -60,6 +74,7 @@ interface DataStore {
   user: { email: string; role: string } | null;
   // File tracking
   uploadedFiles: UploadedFile[];
+  generatedReports: GeneratedReport[];
   showAdminPanel: boolean;
   setRawData: (data: Record<string, string | number | null>[], fileName?: string) => void;
   setFilterValue: (value: string) => void;
@@ -76,6 +91,10 @@ interface DataStore {
   setShowAdminPanel: (show: boolean) => void;
   addUploadedFile: (file: UploadedFile) => void;
   getUploadedFiles: () => UploadedFile[];
+  // Report management methods
+  addGeneratedReport: (report: GeneratedReport) => void;
+  getGeneratedReports: () => GeneratedReport[];
+  deleteGeneratedReport: (reportId: string) => void;
 }
 
 const CHUNK_SIZE = 10000; // Process data in chunks of 10k rows
@@ -238,6 +257,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
   user: loadFromLocalStorage('user', null),
   // File tracking
   uploadedFiles: loadFromLocalStorage('uploadedFiles', []),
+  generatedReports: loadFromLocalStorage('generatedReports', []),
   showAdminPanel: loadFromLocalStorage('showAdminPanel', false),
   setRawData: (data, fileName) => {
     if (!data || data.length === 0) {
@@ -460,5 +480,21 @@ export const useDataStore = create<DataStore>((set, get) => ({
   },
   getUploadedFiles: () => {
     return get().uploadedFiles;
+  },
+  // Report management methods
+  addGeneratedReport: (report: GeneratedReport) => {
+    const currentReports = get().generatedReports;
+    const updatedReports = [report, ...currentReports];
+    saveToLocalStorage('generatedReports', updatedReports);
+    set({ generatedReports: updatedReports });
+  },
+  getGeneratedReports: () => {
+    return get().generatedReports;
+  },
+  deleteGeneratedReport: (reportId: string) => {
+    const currentReports = get().generatedReports;
+    const updatedReports = currentReports.filter(report => report.id !== reportId);
+    saveToLocalStorage('generatedReports', updatedReports);
+    set({ generatedReports: updatedReports });
   }
 }));
