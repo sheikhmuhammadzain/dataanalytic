@@ -309,7 +309,7 @@ export const LandingPage: React.FC = () => {
                 {/* Main heading */}
                 <motion.h1 
                   variants={fadeIn}
-                  className={`text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight ${getThemeClass('text-white', 'text-gray-900')}`}
+                  className={`text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tighter leading-tight ${getThemeClass('text-white', 'text-gray-900')}`}
                 >
                   Transform Your Data Into{' '}
                   <span className={getThemeClass('bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text', 'text-app-blue-800')}>
