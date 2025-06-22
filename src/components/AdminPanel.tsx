@@ -15,7 +15,8 @@ import {
   Trash2,
   Edit3,
   Eye,
-  Copy
+  Copy,
+  Brain
 } from 'lucide-react';
 import { useDataStore } from '../store/dataStore';
 import { FileUpload } from './FileUpload';
@@ -39,10 +40,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
   
   // Settings state
   const [activeTab, setActiveTab] = useState<'files' | 'export' | 'api'>('files');
-  const [apiKeys, setApiKeys] = useState([
-    { id: '1', name: 'Gemini AI', key: 'sk-...abc123', status: 'active' },
-    { id: '2', name: 'OpenAI', key: 'sk-...def456', status: 'inactive' }
-  ]);
+  const [geminiApiKey, setGeminiApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || '');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [exportSettings, setExportSettings] = useState({
     defaultFormat: 'html',
     namingConvention: 'timestamp',
@@ -133,17 +133,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
     }
   };
 
-  const handleCopyApiKey = (key: string) => {
-    navigator.clipboard.writeText(key);
-    alert('API key copied to clipboard');
+  const handleSaveApiKey = async () => {
+    setIsSaving(true);
+    try {
+      // In a real app, you'd save this to your backend or update environment
+      // For now, we'll just simulate the save
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update the environment variable (this won't persist in browser)
+      if (typeof window !== 'undefined') {
+        // Store in localStorage as a fallback for demo purposes
+        localStorage.setItem('VITE_GEMINI_API_KEY', geminiApiKey);
+      }
+      
+      alert('API key saved successfully! Note: In production, this would be securely stored on the server.');
+    } catch (error) {
+      alert('Failed to save API key. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleToggleApiKey = (id: string) => {
-    setApiKeys(keys => keys.map(key => 
-      key.id === id 
-        ? { ...key, status: key.status === 'active' ? 'inactive' : 'active' }
-        : key
-    ));
+  const handleToggleApiKeyVisibility = () => {
+    setShowApiKey(!showApiKey);
   };
 
   return (
@@ -990,61 +1002,134 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ theme, getThemeClass }) 
             )}
 
             {activeTab === 'api' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className={`font-semibold ${getThemeClass('text-white', 'text-gray-900')}`}>
-                    API Keys ({apiKeys.length})
-                  </h3>
-                  <button className={`px-4 py-2 rounded-lg text-sm font-medium ${getThemeClass('bg-zinc-700 text-white hover:bg-zinc-600', 'bg-gray-900 text-white hover:bg-gray-800')} transition-colors`}>
-                    Add New Key
-                  </button>
-                </div>
-                
-                <div className="space-y-3">
-                  {apiKeys.map((apiKey) => (
-                    <div 
-                      key={apiKey.id}
-                      className={`flex items-center justify-between p-4 rounded-lg ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-gray-50 border border-gray-200')}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${getThemeClass('bg-zinc-700', 'bg-white')}`}>
-                          <Key className={`w-4 h-4 ${getThemeClass('text-zinc-400', 'text-gray-600')}`} />
+              <div className="space-y-8">
+                {/* Gemini API Configuration */}
+                <div className={`p-8 rounded-xl ${getThemeClass('bg-zinc-800 border border-zinc-700', 'bg-white border border-gray-200')}`}>
+                  <div className="flex items-start gap-3 mb-6">
+                    <div className={`p-2 rounded-lg ${getThemeClass('bg-blue-500/20', 'bg-blue-100')}`}>
+                      <Brain className={`w-6 h-6 ${getThemeClass('text-blue-400', 'text-blue-600')}`} />
+                    </div>
+                    <div>
+                      <h3 className={`text-xl font-semibold ${getThemeClass('text-white', 'text-gray-900')} mb-2`}>
+                        Gemini API Configuration
+                      </h3>
+                      <p className={`${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
+                        Configure your Google Gemini API key for AI-powered data analysis
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className={`block text-sm font-medium ${getThemeClass('text-zinc-300', 'text-gray-700')} mb-2`}>
+                        Gemini API Key
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showApiKey ? 'text' : 'password'}
+                          value={geminiApiKey}
+                          onChange={(e) => setGeminiApiKey(e.target.value)}
+                          placeholder="sk-..."
+                          className={`w-full p-4 pr-24 rounded-lg border font-mono ${getThemeClass('bg-zinc-700 border-zinc-600 text-white placeholder-zinc-400', 'bg-white border-gray-300 text-gray-900 placeholder-gray-500')} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                        />
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                          <button
+                            type="button"
+                            onClick={handleToggleApiKeyVisibility}
+                            className={`p-2 rounded ${getThemeClass('text-zinc-400 hover:text-white hover:bg-zinc-600', 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')} transition-colors`}
+                            title={showApiKey ? 'Hide API Key' : 'Show API Key'}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveApiKey}
+                            disabled={isSaving || !geminiApiKey.trim()}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                              isSaving || !geminiApiKey.trim()
+                                ? getThemeClass('bg-zinc-600 text-zinc-400 cursor-not-allowed', 'bg-gray-200 text-gray-400 cursor-not-allowed')
+                                : getThemeClass('bg-blue-600 text-white hover:bg-blue-700', 'bg-blue-600 text-white hover:bg-blue-700')
+                            }`}
+                          >
+                            {isSaving ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Saving...
+                              </div>
+                            ) : (
+                              'Save'
+                            )}
+                          </button>
                         </div>
-                        <div>
-                          <h4 className={`font-medium ${getThemeClass('text-white', 'text-gray-900')}`}>
-                            {apiKey.name}
-                          </h4>
-                          <p className={`text-sm font-mono ${getThemeClass('text-zinc-400', 'text-gray-600')}`}>
-                            {apiKey.key}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          apiKey.status === 'active' 
-                            ? getThemeClass('bg-green-500/20 text-green-400', 'bg-green-100 text-green-700')
-                            : getThemeClass('bg-red-500/20 text-red-400', 'bg-red-100 text-red-700')
-                        }`}>
-                          {apiKey.status}
-                        </span>
-                        <button
-                          onClick={() => handleCopyApiKey(apiKey.key)}
-                          className={`p-2 rounded-lg ${getThemeClass('hover:bg-zinc-600 text-zinc-400 hover:text-white', 'hover:bg-gray-200 text-gray-500 hover:text-gray-700')} transition-colors`}
-                          title="Copy Key"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleToggleApiKey(apiKey.id)}
-                          className={`p-2 rounded-lg ${getThemeClass('hover:bg-zinc-600 text-zinc-400 hover:text-white', 'hover:bg-gray-200 text-gray-500 hover:text-gray-700')} transition-colors`}
-                          title={apiKey.status === 'active' ? 'Deactivate' : 'Activate'}
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
                       </div>
                     </div>
-                  ))}
+
+                    {/* How to get API Key Instructions */}
+                    <div className={`p-6 rounded-lg ${getThemeClass('bg-blue-500/10 border border-blue-500/20', 'bg-blue-50 border border-blue-200')}`}>
+                      <h4 className={`font-semibold ${getThemeClass('text-blue-400', 'text-blue-700')} mb-3`}>
+                        How to get your Gemini API Key:
+                      </h4>
+                      <ol className={`space-y-2 ${getThemeClass('text-zinc-300', 'text-gray-700')}`}>
+                        <li className="flex items-start gap-2">
+                          <span className={`flex-shrink-0 w-5 h-5 rounded-full ${getThemeClass('bg-blue-500 text-white', 'bg-blue-600 text-white')} flex items-center justify-center text-xs font-bold mt-0.5`}>
+                            1
+                          </span>
+                          <span>
+                            Visit{' '}
+                            <a 
+                              href="https://makersuite.google.com/app/apikey" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className={`${getThemeClass('text-blue-400 hover:text-blue-300', 'text-blue-600 hover:text-blue-800')} underline`}
+                            >
+                              makersuite.google.com/app/apikey
+                            </a>
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className={`flex-shrink-0 w-5 h-5 rounded-full ${getThemeClass('bg-blue-500 text-white', 'bg-blue-600 text-white')} flex items-center justify-center text-xs font-bold mt-0.5`}>
+                            2
+                          </span>
+                          <span>Sign in to your Google account</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className={`flex-shrink-0 w-5 h-5 rounded-full ${getThemeClass('bg-blue-500 text-white', 'bg-blue-600 text-white')} flex items-center justify-center text-xs font-bold mt-0.5`}>
+                            3
+                          </span>
+                          <span>Create a new API key</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className={`flex-shrink-0 w-5 h-5 rounded-full ${getThemeClass('bg-blue-500 text-white', 'bg-blue-600 text-white')} flex items-center justify-center text-xs font-bold mt-0.5`}>
+                            4
+                          </span>
+                          <span>Copy and paste it here</span>
+                        </li>
+                      </ol>
+                    </div>
+
+                    {/* API Status */}
+                    <div className={`p-4 rounded-lg ${getThemeClass('bg-zinc-700 border border-zinc-600', 'bg-gray-50 border border-gray-200')}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${
+                            geminiApiKey.trim() 
+                              ? getThemeClass('bg-green-400', 'bg-green-500')
+                              : getThemeClass('bg-red-400', 'bg-red-500')
+                          }`}></div>
+                          <span className={`font-medium ${getThemeClass('text-zinc-300', 'text-gray-700')}`}>
+                            API Status
+                          </span>
+                        </div>
+                        <span className={`text-sm font-medium ${
+                          geminiApiKey.trim() 
+                            ? getThemeClass('text-green-400', 'text-green-600')
+                            : getThemeClass('text-red-400', 'text-red-600')
+                        }`}>
+                          {geminiApiKey.trim() ? 'Configured' : 'Not Configured'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
