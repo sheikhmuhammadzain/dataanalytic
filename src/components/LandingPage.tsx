@@ -180,7 +180,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <BarChart2 className={getThemeClass('text-indigo-500', 'text-[#0052A5]')} />
                 <span className={`font-bold text-xl ${getThemeClass('bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text', 'text-[#0052A5]')}`}>
-                  Qubit Dynamics
+                  Berger Paints
                 </span>
               </div>
               
@@ -232,7 +232,7 @@ export const LandingPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <BarChart2 className={getThemeClass('text-indigo-500', 'text-[#0052A5]')} />
               <span className={`font-bold text-xl ${getThemeClass('bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text', 'text-[#0052A5]')}`}>
-                Qubit Dynamics
+                Berger Paints
               </span>
             </div>
             
@@ -580,7 +580,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex items-center gap-2 mb-4">
                 <BarChart2 className={getThemeClass('text-indigo-500', 'text-[#0052A5]')} />
                 <span className={`font-bold text-xl ${getThemeClass('bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text', 'text-[#0052A5]')}`}>
-                  Qubit Dynamics
+                  Berger Paints
                 </span>
               </div>
               <p className={`text-sm ${getThemeClass('text-white/50', 'text-gray-500')}`}>
@@ -619,7 +619,7 @@ export const LandingPage: React.FC = () => {
           <div className={`mt-12 pt-8 border-t ${getThemeClass('border-white/10', 'border-gray-100')}`}>
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className={`text-sm ${getThemeClass('text-white/50', 'text-gray-500')}`}>
-                © 2024 Qubit Dynamics. All rights reserved.
+                © 2024 Berger Paints. All rights reserved.
               </p>
               <div className="flex items-center gap-4">
                 <a href="#" className={`${getThemeClass('text-white/50 hover:text-white', 'text-gray-500 hover:text-[#0052A5]')} transition-colors`}>
