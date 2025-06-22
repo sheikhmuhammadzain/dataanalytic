@@ -12,9 +12,12 @@ import {
   ChevronRight,
   Settings,
   Menu as MenuIcon,
-  X
+  X,
+  CheckCircle,
+  Database
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useDataStore } from '../../store/dataStore';
 
 interface SidebarProps {
   onScrollTo: (id: string) => void;
@@ -116,6 +119,59 @@ const SidebarSubItem: React.FC<{ icon: React.ElementType; label: string; onClick
   </button>
 );
 
+// Session Status Component
+const SessionStatus: React.FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => {
+  const { processedData, uploadedFiles } = useDataStore();
+  const [showStatus, setShowStatus] = useState(false);
+
+  useEffect(() => {
+    // Check if there's data from a restored session
+    const hasRestoredSession = processedData && uploadedFiles.length > 0;
+    if (hasRestoredSession) {
+      setShowStatus(true);
+      // Auto-hide after 5 seconds
+      const timer = setTimeout(() => setShowStatus(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [processedData, uploadedFiles]);
+
+  if (!showStatus || !processedData) return null;
+
+  if (isCollapsed) {
+    return (
+      <div className="px-2 py-1 mb-2">
+        <div className="w-full bg-green-50 border border-green-200 rounded-lg p-2 flex items-center justify-center">
+          <CheckCircle className="w-4 h-4 text-green-600" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="px-4 py-2 mb-3"
+    >
+      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+        <div className="flex items-start gap-2">
+          <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-green-800">Session Restored</p>
+            <p className="text-xs text-green-600 mt-1">
+              {uploadedFiles[0]?.name || 'Previous data'} loaded
+            </p>
+            <p className="text-xs text-green-500 mt-1">
+              {processedData.summary.rowCount.toLocaleString()} rows
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({
   onScrollTo,
   onDownloadCSV,
@@ -190,6 +246,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         )}
       </div>
+
+      {/* Session Status */}
+      <SessionStatus isCollapsed={isCollapsed && !isMobile} />
 
       {/* Navigation Items */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -366,4 +425,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </motion.aside>
     </>
   );
-}; 
+};

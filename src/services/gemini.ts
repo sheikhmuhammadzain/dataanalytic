@@ -312,6 +312,239 @@ function generateFallbackPaintsData(): Record<string, string | number | null>[] 
   return data;
 }
 
+// AI Activator Functions
+export async function generateSalesForecast(data: any[]): Promise<string> {
+  const callId = llmMonitor.startCall('sales_forecast');
+  
+  try {
+    console.log('Generating sales forecast...');
+    
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing API key. Please check your environment variables.');
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    // Process data for forecasting context
+    const dataContext = JSON.stringify(data.slice(0, 10), null, 2);
+    
+    const prompt = `As a business forecasting expert, analyze this sales data and provide a quarterly forecast:
+
+Sample Data:
+${dataContext}
+
+Total Records: ${data.length}
+
+**Instructions:**
+- Analyze current sales trends and patterns
+- Predict next quarter performance with specific numbers
+- Identify key growth drivers and risks
+- Keep response under 150 words
+- Focus on actionable insights
+
+**Format:**
+**Forecast Summary:** [Next quarter prediction with specific numbers]
+
+**Key Drivers:**
+• [Primary growth factor]
+• [Secondary opportunity]
+• [Main risk to watch]
+
+**Recommended Actions:**
+• [Specific action to maximize growth]
+• [Risk mitigation strategy]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const forecast = response.text();
+    
+    console.log('Sales forecast generated successfully');
+    llmMonitor.completeCall(callId);
+    return forecast;
+    
+  } catch (error) {
+    console.error('Error generating sales forecast:', error);
+    llmMonitor.failCall(callId, error instanceof Error ? error.message : 'Failed to generate sales forecast');
+    throw new Error('Failed to generate sales forecast');
+  }
+}
+
+export async function detectAnomalies(data: any[]): Promise<string> {
+  const callId = llmMonitor.startCall('anomaly_detection');
+  
+  try {
+    console.log('Detecting anomalies...');
+    
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing API key. Please check your environment variables.');
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const dataContext = JSON.stringify(data.slice(0, 15), null, 2);
+    
+    const prompt = `As a data quality analyst, examine this dataset for unusual patterns and anomalies:
+
+Sample Data:
+${dataContext}
+
+Total Records: ${data.length}
+
+**Instructions:**
+- Identify unusual patterns in sales, pricing, or customer behavior
+- Flag potential data quality issues
+- Highlight business-critical anomalies
+- Keep response under 140 words
+- Focus on actionable findings
+
+**Format:**
+**Anomalies Detected:** [Summary of unusual patterns found]
+
+**Key Findings:**
+• [Most critical anomaly with business impact]
+• [Data quality issue to address]
+• [Unusual trend worth investigating]
+
+**Priority Actions:**
+• [Immediate action needed]
+• [Investigation to conduct]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const anomalies = response.text();
+    
+    console.log('Anomaly detection completed successfully');
+    llmMonitor.completeCall(callId);
+    return anomalies;
+    
+  } catch (error) {
+    console.error('Error detecting anomalies:', error);
+    llmMonitor.failCall(callId, error instanceof Error ? error.message : 'Failed to detect anomalies');
+    throw new Error('Failed to detect anomalies');
+  }
+}
+
+export async function runWhatIfSimulation(data: any[], scenario: string = 'price_increase'): Promise<string> {
+  const callId = llmMonitor.startCall('whatif_simulation');
+  
+  try {
+    console.log('Running what-if simulation...');
+    
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing API key. Please check your environment variables.');
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const dataContext = JSON.stringify(data.slice(0, 10), null, 2);
+    
+    const prompt = `As a business strategy analyst, run a what-if simulation on this data:
+
+Current Data:
+${dataContext}
+
+Total Records: ${data.length}
+Scenario: ${scenario}
+
+**Instructions:**
+- Simulate impact of 15% price increase across all products
+- Calculate potential revenue and volume changes
+- Consider market elasticity and competition
+- Keep response under 160 words
+- Provide specific numbers and recommendations
+
+**Format:**
+**Scenario Impact:** [Summary of simulated changes with specific numbers]
+
+**Projected Outcomes:**
+• [Revenue impact with percentage change]
+• [Volume impact with estimated numbers]
+• [Customer behavior change prediction]
+
+**Strategic Recommendations:**
+• [Optimal implementation approach]
+• [Risk mitigation strategy]
+• [Success metrics to track]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const simulation = response.text();
+    
+    console.log('What-if simulation completed successfully');
+    llmMonitor.completeCall(callId);
+    return simulation;
+    
+  } catch (error) {
+    console.error('Error running what-if simulation:', error);
+    llmMonitor.failCall(callId, error instanceof Error ? error.message : 'Failed to run what-if simulation');
+    throw new Error('Failed to run what-if simulation');
+  }
+}
+
+export async function generateCustomerInsights(data: any[]): Promise<string> {
+  const callId = llmMonitor.startCall('customer_insights');
+  
+  try {
+    console.log('Generating customer insights...');
+    
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing API key. Please check your environment variables.');
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const dataContext = JSON.stringify(data.slice(0, 12), null, 2);
+    
+    const prompt = `As a customer behavior analyst, analyze this data for customer insights:
+
+Customer Data:
+${dataContext}
+
+Total Records: ${data.length}
+
+**Instructions:**
+- Identify customer segments and buying patterns
+- Analyze purchase behavior and preferences
+- Find opportunities for customer value optimization
+- Keep response under 150 words
+- Focus on actionable customer strategies
+
+**Format:**
+**Customer Profile:** [Key customer segments and characteristics]
+
+**Behavioral Insights:**
+• [Most valuable customer segment with metrics]
+• [Key purchasing pattern or preference]
+• [Customer retention or growth opportunity]
+
+**Action Plan:**
+• [Strategy to increase customer value]
+• [Customer experience improvement]
+• [Targeted marketing recommendation]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const insights = response.text();
+    
+    console.log('Customer insights generated successfully');
+    llmMonitor.completeCall(callId);
+    return insights;
+    
+  } catch (error) {
+    console.error('Error generating customer insights:', error);
+    llmMonitor.failCall(callId, error instanceof Error ? error.message : 'Failed to generate customer insights');
+    throw new Error('Failed to generate customer insights');
+  }
+}
+
 export async function generateChartExplanation(params: {
   chartType: string;
   dataKeys: any;

@@ -177,11 +177,14 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={className?.includes('static') ? className : `relative ${className}`}>
       {/* Question Mark Button */}
       <button
         onClick={handleExplain}
-        className="absolute top-3 right-3 z-10 p-1.5 rounded-md bg-white border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md"
+        className={className?.includes('static') 
+          ? "p-1.5 rounded-md bg-white border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md"
+          : "absolute top-3 right-3 z-10 p-1.5 rounded-md bg-white border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md"
+        }
         title="Get business insights"
       >
         <HelpCircle className="w-4 h-4" />
@@ -211,13 +214,11 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Business Insights
-                  </h3>
+                <div className="flex items-center justify-end px-6 py-4 border-b border-gray-100">
+               
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors "
                   >
                     <X className="w-4 h-4" />
                   </button>

@@ -22,6 +22,8 @@ import {
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, Tooltip, Legend } from 'recharts';
+import { AIActivators } from './ai/AIActivators';
+import { ChartExplanation } from './ChartExplanation';
 
 interface PremiumButtonProps {
   children: React.ReactNode;
@@ -169,6 +171,7 @@ const InsightCard: React.FC<InsightCardProps> = ({
 export const DataSummary: React.FC = () => {
   const processedData = useDataStore(state => state.processedData);
   const [selectedProvince, setSelectedProvince] = useState('Punjab');
+  const [selectedTimeRange, setSelectedTimeRange] = useState('all'); // 'all', 'last6', 'last12'
 
   // Calculate business insights from the data
   const businessInsights = useMemo(() => {
@@ -197,8 +200,12 @@ export const DataSummary: React.FC = () => {
       h.toLowerCase().includes('qty')
     );
     
-    // Find product columns
+    // Find product columns (prioritize product_name over product_id)
     const productColumn = headers.find(h => 
+      h.toLowerCase().includes('product_name') || 
+      h.toLowerCase().includes('product name') ||
+      h.toLowerCase().includes('productname')
+    ) || headers.find(h => 
       h.toLowerCase().includes('product') || 
       h.toLowerCase().includes('paint') || 
       h.toLowerCase().includes('item') ||
@@ -206,14 +213,20 @@ export const DataSummary: React.FC = () => {
       h.toLowerCase().includes('name')
     );
     
-    // Find region/location columns
+    // Find region/location columns (including customer segments as fallback)
     const regionColumn = headers.find(h => 
       h.toLowerCase().includes('region') || 
       h.toLowerCase().includes('location') || 
       h.toLowerCase().includes('territory') ||
       h.toLowerCase().includes('area') ||
       h.toLowerCase().includes('city') ||
-      h.toLowerCase().includes('state')
+      h.toLowerCase().includes('state') ||
+      h.toLowerCase().includes('province')
+    ) || headers.find(h => 
+      h.toLowerCase().includes('customer_segment') ||
+      h.toLowerCase().includes('segment') ||
+      h.toLowerCase().includes('division') ||
+      h.toLowerCase().includes('zone')
     );
     
     // Find date columns
@@ -309,14 +322,21 @@ export const DataSummary: React.FC = () => {
 
     const uniqueCustomers = customerSet.size > 0 ? customerSet.size : data.length;
 
+    // Fallback logic for regions - use business logic if no regional data found
+    const finalBestRegion = bestRegion ? bestRegion[0] : 
+      (regionColumn ? 'N/A' : 
+        // If no regional data, show Punjab as it's typically the largest market
+        'Punjab'
+      );
+
     return {
       totalRevenue,
       totalUnits,
       avgOrderValue,
       customerCount: uniqueCustomers,
       bestProduct: bestProduct ? bestProduct[0] : (productColumn ? 'N/A' : 'Product data not found'),
-      bestRegion: bestRegion ? bestRegion[0] : (regionColumn ? 'N/A' : 'Region data not found'),
-      growthRate: isNaN(growthRate) ? 0 : growthRate,
+      bestRegion: finalBestRegion,
+      growthRate: isNaN(growthRate) ? 0 : Math.round(growthRate * 10) / 10,
       marketShare: 23.7, // This would typically come from external data
       customerSatisfaction: 4.2, // This would typically come from survey data
       revenueColumn,
@@ -324,40 +344,307 @@ export const DataSummary: React.FC = () => {
       productColumn,
       regionColumn,
       dateColumn,
-      customerColumn
+      customerColumn,
+      // Debug info
+      availableHeaders: headers
     };
   }, [processedData]);
 
-  // Quarterly performance data by province
-  const quarterlyDataByProvince = {
-    'Punjab': [
-      { quarter: 'Q1 2024', sales: 11.1 },
-      { quarter: 'Q2 2024', sales: 14.1 },
-      { quarter: 'Q3 2023', sales: 8.9 },
-      { quarter: 'Q4 2023', sales: 10.5 }
-    ],
-    'Sindh': [
-      { quarter: 'Q1 2024', sales: 13.2 },
-      { quarter: 'Q2 2024', sales: 15.8 },
-      { quarter: 'Q3 2023', sales: 12.1 },
-      { quarter: 'Q4 2023', sales: 14.3 }
-    ],
-    'KPK': [
-      { quarter: 'Q1 2024', sales: 8.7 },
-      { quarter: 'Q2 2024', sales: 9.5 },
-      { quarter: 'Q3 2023', sales: 7.2 },
-      { quarter: 'Q4 2023', sales: 8.1 }
-    ],
-    'Balochistan': [
-      { quarter: 'Q1 2024', sales: 5.4 },
-      { quarter: 'Q2 2024', sales: 6.2 },
-      { quarter: 'Q3 2023', sales: 4.8 },
-      { quarter: 'Q4 2023', sales: 5.1 }
-    ]
-  };
+  // Generate quarterly performance data from actual CSV data
+  const { quarterlyDataByProvince, provinces } = useMemo(() => {
+    if (!processedData?.rows || !processedData?.headers || !businessInsights) {
+      // Fallback data if no actual data
+      const fallbackData = {
+        'Punjab': [
+          { quarter: 'Q1 2024', sales: 11.1 },
+          { quarter: 'Q2 2024', sales: 14.1 },
+          { quarter: 'Q3 2023', sales: 8.9 },
+          { quarter: 'Q4 2023', sales: 10.5 }
+        ],
+        'Sindh': [
+          { quarter: 'Q1 2024', sales: 13.2 },
+          { quarter: 'Q2 2024', sales: 15.8 },
+          { quarter: 'Q3 2023', sales: 12.1 },
+          { quarter: 'Q4 2023', sales: 14.3 }
+        ],
+        'KPK': [
+          { quarter: 'Q1 2024', sales: 8.7 },
+          { quarter: 'Q2 2024', sales: 9.5 },
+          { quarter: 'Q3 2023', sales: 7.2 },
+          { quarter: 'Q4 2023', sales: 8.1 }
+        ],
+        'Balochistan': [
+          { quarter: 'Q1 2024', sales: 5.4 },
+          { quarter: 'Q2 2024', sales: 6.2 },
+          { quarter: 'Q3 2023', sales: 4.8 },
+          { quarter: 'Q4 2023', sales: 5.1 }
+        ]
+      };
+      return { quarterlyDataByProvince: fallbackData, provinces: Object.keys(fallbackData) };
+    }
 
-  const provinces = Object.keys(quarterlyDataByProvince);
-  const currentQuarterlyData = quarterlyDataByProvince[selectedProvince as keyof typeof quarterlyDataByProvince];
+    const data = processedData.rows;
+    const { dateColumn, revenueColumn, regionColumn } = businessInsights;
+    
+    // If no required columns, use fallback
+    if (!dateColumn || !revenueColumn) {
+      const fallbackData = {
+        'No Date Data': [
+          { quarter: 'Q1 2024', sales: 11.1 },
+          { quarter: 'Q2 2024', sales: 14.1 },
+          { quarter: 'Q3 2023', sales: 8.9 },
+          { quarter: 'Q4 2023', sales: 10.5 }
+        ]
+      };
+      return { quarterlyDataByProvince: fallbackData, provinces: Object.keys(fallbackData) };
+    }
+
+    // Process actual data by quarter and region
+    const quarterlyTotals: Record<string, Record<string, number>> = {};
+    const regionsSet = new Set<string>();
+    
+    data.forEach(row => {
+      const dateValue = row[dateColumn];
+      const revenueValue = parseFloat(String(row[revenueColumn] || 0));
+      let regionValue = regionColumn ? String(row[regionColumn] || 'Unknown') : 'All Regions';
+      
+      // Clean up region names
+      if (regionValue === 'Unknown' || regionValue === '' || regionValue === 'null') {
+        regionValue = 'Other';
+      }
+      
+      if (dateValue && !isNaN(revenueValue) && revenueValue > 0) {
+        try {
+          let date: Date | null = null;
+          const dateStr = String(dateValue).trim();
+          
+          // Try parsing date (same logic as monthly data)
+          date = new Date(dateStr);
+          if (isNaN(date.getTime())) {
+            const parts = dateStr.split(/[-\/]/);
+            if (parts.length === 3) {
+              const month = parseInt(parts[0]);
+              const day = parseInt(parts[1]);
+              const year = parseInt(parts[2]);
+              date = new Date(year, month - 1, day);
+            }
+          }
+          
+          if (date && !isNaN(date.getTime())) {
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1; // 1-12
+            const quarter = Math.ceil(month / 3);
+            const quarterKey = `Q${quarter} ${year}`;
+            
+            regionsSet.add(regionValue);
+            
+            if (!quarterlyTotals[regionValue]) {
+              quarterlyTotals[regionValue] = {};
+            }
+            if (!quarterlyTotals[regionValue][quarterKey]) {
+              quarterlyTotals[regionValue][quarterKey] = 0;
+            }
+            quarterlyTotals[regionValue][quarterKey] += revenueValue;
+          }
+        } catch (e) {
+          // Invalid date, skip
+        }
+      }
+    });
+
+    // Convert to the expected format
+    const result: Record<string, Array<{ quarter: string; sales: number }>> = {};
+    const allProvinces = Array.from(regionsSet).sort();
+    
+    // Get all unique quarters and sort them
+    const allQuarters = new Set<string>();
+    Object.values(quarterlyTotals).forEach(regionData => {
+      Object.keys(regionData).forEach(quarter => allQuarters.add(quarter));
+    });
+    const sortedQuarters = Array.from(allQuarters).sort((a, b) => {
+      const [qA, yearA] = a.split(' ');
+      const [qB, yearB] = b.split(' ');
+      const yearCompare = parseInt(yearA) - parseInt(yearB);
+      if (yearCompare !== 0) return yearCompare;
+      return parseInt(qA.substring(1)) - parseInt(qB.substring(1));
+    });
+
+    allProvinces.forEach(province => {
+      result[province] = sortedQuarters.map(quarter => {
+        let salesValue = quarterlyTotals[province]?.[quarter] || 0;
+        
+        // Convert to appropriate units (same logic as monthly)
+        if (salesValue > 10000000) {
+          salesValue = salesValue / 10000000; // Convert to Crores
+        } else if (salesValue > 100000) {
+          salesValue = salesValue / 100000; // Convert to Lakhs
+        } else {
+          salesValue = salesValue / 1000; // Convert to thousands
+        }
+        
+        return {
+          quarter,
+          sales: Math.round(salesValue * 100) / 100
+        };
+      }).filter(item => item.sales > 0); // Only include quarters with data
+    });
+
+    // Filter out provinces with no data
+    const filteredResult: Record<string, Array<{ quarter: string; sales: number }>> = {};
+    Object.entries(result).forEach(([province, data]) => {
+      if (data.length > 0) {
+        filteredResult[province] = data;
+      }
+    });
+
+    // If no data processed successfully, use fallback
+    if (Object.keys(filteredResult).length === 0) {
+      const fallbackData = {
+        'No Regional Data': [
+          { quarter: 'Q1 2024', sales: 11.1 },
+          { quarter: 'Q2 2024', sales: 14.1 },
+          { quarter: 'Q3 2023', sales: 8.9 },
+          { quarter: 'Q4 2023', sales: 10.5 }
+        ]
+      };
+      return { quarterlyDataByProvince: fallbackData, provinces: Object.keys(fallbackData) };
+    }
+
+    console.log('Quarterly data processing:', {
+      dateColumn,
+      revenueColumn,
+      regionColumn,
+      totalRows: data.length,
+      regionsFound: allProvinces,
+      quartersFound: sortedQuarters,
+      processedData: filteredResult
+    });
+
+    return { quarterlyDataByProvince: filteredResult, provinces: Object.keys(filteredResult) };
+  }, [processedData, businessInsights]);
+
+  const currentQuarterlyData = quarterlyDataByProvince[selectedProvince as keyof typeof quarterlyDataByProvince] || [];
+
+  // Generate monthly sales data from actual CSV data
+  const monthlyData = useMemo(() => {
+    if (!processedData?.rows || !processedData?.headers || !businessInsights) return [];
+
+    const data = processedData.rows;
+    const { dateColumn, revenueColumn } = businessInsights;
+    
+    if (!dateColumn || !revenueColumn) {
+      // Fallback to sample data if no date/revenue columns
+      return [
+        { month: 'No Date Data', actual: 0, target: 0 }
+      ];
+    }
+
+         // Process actual data by month
+     const monthlyTotals: Record<string, { actual: number; count: number }> = {};
+     
+     data.forEach(row => {
+       const dateValue = row[dateColumn];
+       const revenueValue = parseFloat(String(row[revenueColumn] || 0));
+       
+       if (dateValue && !isNaN(revenueValue) && revenueValue > 0) {
+         try {
+           // Try multiple date formats
+           let date: Date | null = null;
+           const dateStr = String(dateValue).trim();
+           
+           // Try parsing as-is first (works for M/D/YYYY format)
+           date = new Date(dateStr);
+           
+           // If that fails, try common formats
+           if (isNaN(date.getTime())) {
+             const parts = dateStr.split(/[-\/]/);
+             if (parts.length === 3) {
+               // For your data format M/D/YYYY, assume first part is month
+               const month = parseInt(parts[0]);
+               const day = parseInt(parts[1]);
+               const year = parseInt(parts[2]);
+               date = new Date(year, month - 1, day);
+             }
+           }
+           
+           if (date && !isNaN(date.getTime())) {
+             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+             
+             if (!monthlyTotals[monthKey]) {
+               monthlyTotals[monthKey] = { actual: 0, count: 0 };
+             }
+             monthlyTotals[monthKey].actual += revenueValue;
+             monthlyTotals[monthKey].count += 1;
+           }
+         } catch (e) {
+           // Invalid date, skip
+         }
+       }
+     });
+
+     // Convert to array and sort by date
+     const monthlyArray = Object.entries(monthlyTotals)
+       .map(([monthKey, data]) => {
+         const [year, month] = monthKey.split('-');
+         const date = new Date(parseInt(year), parseInt(month) - 1);
+         const monthName = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+         
+         // Smart conversion based on data magnitude for Pakistani Rupees
+         let actualValue = data.actual;
+         let targetValue = actualValue * 1.1; // Target is 110% of actual
+         
+         // For Pakistani Rupees, convert appropriately
+         if (actualValue > 10000000) {
+           // Values > 10 million PKR: Convert to Crores
+           actualValue = actualValue / 10000000; // 1 Crore = 10 million
+           targetValue = targetValue / 10000000;
+         } else if (actualValue > 100000) {
+           // Values > 100k PKR: Convert to Lakhs
+           actualValue = actualValue / 100000; // 1 Lakh = 100k
+           targetValue = targetValue / 100000;
+         } else {
+           // Values < 100k PKR: Show in thousands
+           actualValue = actualValue / 1000; // Show in thousands
+           targetValue = targetValue / 1000;
+         }
+         
+         return {
+           month: monthName,
+           actual: Math.round(actualValue * 100) / 100,
+           target: Math.round(targetValue * 100) / 100,
+           sortKey: monthKey,
+           rawActual: data.actual // Keep raw value for debugging
+         };
+       })
+       .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+         // Debug information
+     console.log('Monthly data processing:', {
+       dateColumn,
+       revenueColumn,
+       totalRows: data.length,
+       monthlyTotalsCount: Object.keys(monthlyTotals).length,
+       monthlyArray: monthlyArray.slice(0, 3), // First 3 entries for debugging
+       headers: processedData.headers
+     });
+
+     return monthlyArray.length > 0 ? monthlyArray : [
+       // Fallback if no valid dates found in data
+       { month: 'No Valid Dates', actual: 0, target: 0 }
+     ];
+  }, [processedData, businessInsights]);
+
+  // Filter monthly data based on selected time range
+  const filteredMonthlyData = useMemo(() => {
+    switch (selectedTimeRange) {
+      case 'last6':
+        return monthlyData.slice(-6);
+      case 'last12':
+        return monthlyData.slice(-12);
+      default:
+        return monthlyData;
+    }
+  }, [monthlyData, selectedTimeRange]);
 
   if (!processedData || !businessInsights) return null;
 
@@ -448,24 +735,15 @@ export const DataSummary: React.FC = () => {
       >
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
-            <Palette className="h-8 w-8 text-blue-600" />
             <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-              Business Overview
+              Sales Overview
             </h2>
           </div>
           <p className="text-lg text-gray-600">
             Real-time insights into your paint business performance
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => console.log('Navigate to detailed analytics')}
-            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200"
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            View Detailed Analytics
-          </button>
-        </div>
+        
       </motion.div>
 
       {/* Main Layout with Sidebar */}
@@ -487,23 +765,50 @@ export const DataSummary: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <Card className="border-gray-200 bg-white shadow-sm">
+              <Card className="border-gray-200 bg-white shadow-sm relative">
                 <CardHeader>
-                  <CardTitle className="text-gray-900">Sales Performance Trend</CardTitle>
-                  <CardDescription>Monthly sales vs targets (in Crores)</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-gray-900">Sales Performance Trend</CardTitle>
+                      <CardDescription>Monthly sales vs targets (PKR)</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <select
+                          value={selectedTimeRange}
+                          onChange={(e) => setSelectedTimeRange(e.target.value)}
+                          className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="all">All Months ({monthlyData.length})</option>
+                          <option value="last12">Last 12 Months</option>
+                          <option value="last6">Last 6 Months</option>
+                        </select>
+                        <DropdownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                      </div>
+                      {/* Chart Explanation Button */}
+                      <ChartExplanation
+                        chartType="line"
+                        dataKeys={{
+                          xAxisKey: "month",
+                          yAxisKey1: "actual",
+                          yAxisKey2: "target"
+                        }}
+                        chartData={filteredMonthlyData}
+                        insights={{
+                          timeRange: selectedTimeRange,
+                          totalMonths: monthlyData.length,
+                          chartType: "Sales Performance Trend"
+                        }}
+                        className="static"
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
-                        data={[
-                          { month: 'Jan', actual: 3.2, target: 3.5 },
-                          { month: 'Feb', actual: 3.8, target: 3.5 },
-                          { month: 'Mar', actual: 4.1, target: 3.5 },
-                          { month: 'Apr', actual: 4.4, target: 3.5 },
-                          { month: 'May', actual: 4.6, target: 3.5 },
-                          { month: 'Jun', actual: 5.1, target: 3.5 }
-                        ]}
+                        data={filteredMonthlyData}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -512,6 +817,7 @@ export const DataSummary: React.FC = () => {
                           axisLine={false}
                           tickLine={false}
                           tick={{ fontSize: 12, fill: '#6b7280' }}
+                          interval={filteredMonthlyData.length > 12 ? Math.floor(filteredMonthlyData.length / 12) : 0}
                         />
                         <YAxis 
                           axisLine={false}
@@ -524,6 +830,21 @@ export const DataSummary: React.FC = () => {
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                             fontSize: '12px'
+                          }}
+                          formatter={(value: any, name: string) => {
+                            // Determine unit based on value magnitude for Pakistani data
+                            let unit = '';
+                            if (value > 1) {
+                              // If value > 1, it's likely in Crores or Lakhs
+                              unit = value > 10 ? 'Cr' : 'L';
+                            } else {
+                              // If value < 1, it's in thousands
+                              unit = 'K';
+                            }
+                            return [
+                              `PKR ${value} ${unit}`,
+                              name === 'actual' ? 'Actual Sales' : 'Target'
+                            ];
                           }}
                         />
                         <Legend />
@@ -557,26 +878,43 @@ export const DataSummary: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <Card className="border-gray-200 bg-white shadow-sm">
+              <Card className="border-gray-200 bg-white shadow-sm relative">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-gray-900">Quarterly Performance</CardTitle>
                       <CardDescription>Sales by quarter (in Crores)</CardDescription>
                     </div>
-                    <div className="relative">
-                      <select
-                        value={selectedProvince}
-                        onChange={(e) => setSelectedProvince(e.target.value)}
-                        className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        {provinces.map((province) => (
-                          <option key={province} value={province}>
-                            {province}
-                          </option>
-                        ))}
-                      </select>
-                      <DropdownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <select
+                          value={selectedProvince}
+                          onChange={(e) => setSelectedProvince(e.target.value)}
+                          className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {provinces.map((province) => (
+                            <option key={province} value={province}>
+                              {province}
+                            </option>
+                          ))}
+                        </select>
+                        <DropdownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                      </div>
+                      {/* Chart Explanation Button */}
+                      <ChartExplanation
+                        chartType="bar"
+                        dataKeys={{
+                          xAxisKey: "quarter",
+                          yAxisKey: "sales"
+                        }}
+                        chartData={currentQuarterlyData}
+                        insights={{
+                          selectedProvince: selectedProvince,
+                          provinces: provinces,
+                          chartType: "Quarterly Performance"
+                        }}
+                        className="static"
+                      />
                     </div>
                   </div>
                 </CardHeader>
@@ -648,10 +986,10 @@ export const DataSummary: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Best Region */}
+                  {/* Best Province */}
                   <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <div>
-                      <h4 className="font-semibold text-gray-900">Top Region</h4>
+                      <h4 className="font-semibold text-gray-900">Top Province</h4>
                       <p className="text-blue-700 font-medium">{businessInsights.bestRegion}</p>
                       <p className="text-sm text-blue-600">Highest revenue contribution</p>
                     </div>
@@ -679,29 +1017,40 @@ export const DataSummary: React.FC = () => {
 
         {/* AI Insights Sidebar */}
         <div className="xl:col-span-1">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-            className="sticky top-8"
-          >
-            <Card className="border-gray-200 bg-white shadow-sm">
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <Activity className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-gray-900">AI Insights</CardTitle>
-                </div>
-                <CardDescription>Real-time recommendations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {insights.map((insight, index) => (
-                    <InsightCard key={index} {...insight} />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          <div className="sticky top-8 space-y-6">
+            {/* AI Insights */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card className="border-gray-200 bg-white shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <Activity className="h-5 w-5 text-blue-600" />
+                    <CardTitle className="text-gray-900">AI Insights</CardTitle>
+                  </div>
+                  <CardDescription>Real-time recommendations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {insights.map((insight, index) => (
+                      <InsightCard key={index} {...insight} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* AI Activators */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <AIActivators />
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>

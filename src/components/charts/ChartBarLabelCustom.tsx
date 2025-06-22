@@ -27,14 +27,15 @@ export function ChartBarLabelCustom() {
   const processedData = useDataStore(state => state.processedData);
 
   // Prepare chart data from CSV
-  const { chartData, chartConfig, xAxisKey, yAxisKey, noData } = useMemo(() => {
+  const { chartData, chartConfig, xAxisKey, yAxisKey, noData, isProductChart } = useMemo(() => {
     if (!processedData?.rows || processedData.rows.length === 0) {
       return {
         chartData: [],
         chartConfig: {},
         xAxisKey: '',
         yAxisKey: '',
-        noData: true
+        noData: true,
+        isProductChart: false
       };
     }
 
@@ -47,7 +48,8 @@ export function ChartBarLabelCustom() {
         chartConfig: {},
         xAxisKey: '',
         yAxisKey: '',
-        noData: true
+        noData: true,
+        isProductChart: false
       };
     }
 
@@ -55,17 +57,74 @@ export function ChartBarLabelCustom() {
     let xKey = summary.categoricalColumns[0] || headers[0];
     // Use first numerical column as value axis
     let yKey = summary.numericalColumns[0];
+    let isProductChart = false;
 
-    // If we have a name/category/product column, prefer it for categories
-    const categoryColumn = headers.find(header => 
-      header.toLowerCase().includes('name') || 
-      header.toLowerCase().includes('category') ||
-      header.toLowerCase().includes('product') ||
-      header.toLowerCase().includes('type') ||
-      header.toLowerCase().includes('label')
+    // PRIORITY 1: Look for product name columns specifically
+    const productNameColumn = headers.find(header => 
+      header.toLowerCase().includes('product_name') ||
+      header.toLowerCase().includes('productname') ||
+      header.toLowerCase() === 'product_name'
     );
-    if (categoryColumn && summary.categoricalColumns.includes(categoryColumn)) {
+    
+    // PRIORITY 2: Look for general name columns
+    const nameColumn = headers.find(header => 
+      header.toLowerCase().includes('name') && 
+      !header.toLowerCase().includes('file') &&
+      !header.toLowerCase().includes('user')
+    );
+
+    // PRIORITY 3: Look for customer segment
+    const segmentColumn = headers.find(header => 
+      header.toLowerCase().includes('customer_segment') ||
+      header.toLowerCase().includes('segment')
+    );
+
+    // PRIORITY 4: Look for product category
+    const categoryColumn = headers.find(header => 
+      header.toLowerCase().includes('product_category') ||
+      header.toLowerCase().includes('category')
+    );
+
+    // Apply priority order and check if it's in categorical columns
+    if (productNameColumn && summary.categoricalColumns.includes(productNameColumn)) {
+      xKey = productNameColumn;
+      isProductChart = true;
+    } else if (nameColumn && summary.categoricalColumns.includes(nameColumn)) {
+      xKey = nameColumn;
+      isProductChart = true;
+    } else if (segmentColumn && summary.categoricalColumns.includes(segmentColumn)) {
+      xKey = segmentColumn;
+      isProductChart = false;
+    } else if (categoryColumn && summary.categoricalColumns.includes(categoryColumn)) {
       xKey = categoryColumn;
+      isProductChart = categoryColumn.toLowerCase().includes('product');
+    }
+
+    // Smart Y-axis selection for business metrics
+    // PRIORITY 1: Sales amount (revenue)
+    const salesAmountColumn = summary.numericalColumns.find(col => 
+      col.toLowerCase().includes('sales_amount') ||
+      col.toLowerCase().includes('revenue')
+    );
+    
+    // PRIORITY 2: Quantity sold
+    const quantityColumn = summary.numericalColumns.find(col => 
+      col.toLowerCase().includes('quantity_sold') ||
+      col.toLowerCase().includes('quantity')
+    );
+    
+    // PRIORITY 3: Price per unit
+    const priceColumn = summary.numericalColumns.find(col => 
+      col.toLowerCase().includes('price_per') ||
+      col.toLowerCase().includes('price')
+    );
+
+    if (salesAmountColumn) {
+      yKey = salesAmountColumn;
+    } else if (quantityColumn) {
+      yKey = quantityColumn;
+    } else if (priceColumn) {
+      yKey = priceColumn;
     }
 
     // Prepare chart data - limit to first 15 rows for better visualization
@@ -106,7 +165,8 @@ export function ChartBarLabelCustom() {
       chartConfig: config,
       xAxisKey: xKey,
       yAxisKey: yKey,
-      noData: false
+      noData: false,
+      isProductChart
     };
   }, [processedData]);
 
@@ -152,9 +212,17 @@ export function ChartBarLabelCustom() {
         insights={{ trend }}
       />
       <CardHeader>
-        <CardTitle>Top {chartData.length} {xAxisKey.replace(/_/g, ' ')} by {yAxisKey.replace(/_/g, ' ')}</CardTitle>
+        <CardTitle>
+          {isProductChart 
+            ? `Top ${chartData.length} Products by Frequency` 
+            : `Top ${chartData.length} ${xAxisKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} by ${yAxisKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`
+          }
+        </CardTitle>
         <CardDescription>
-          Top {chartData.length} {xAxisKey.replace(/_/g, ' ').toLowerCase()} by {yAxisKey.replace(/_/g, ' ').toLowerCase()}
+          {isProductChart 
+            ? `Top ${chartData.length} products ranked by occurrence frequency` 
+            : `Top ${chartData.length} ${xAxisKey.replace(/_/g, ' ').toLowerCase()} by ${yAxisKey.replace(/_/g, ' ').toLowerCase()}`
+          }
         </CardDescription>
       </CardHeader>
       <CardContent>

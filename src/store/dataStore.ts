@@ -60,6 +60,18 @@ export interface GeneratedReport {
   status: 'success' | 'failed';
 }
 
+// Enhanced interface for persisted CSV session
+interface PersistedCSVSession {
+  rawData: Record<string, string | number | null>[] | null;
+  processedData: ProcessedData | null;
+  selectedColumns: string[];
+  transformationHistory: DataTransformation[];
+  currentHistoryIndex: number;
+  filterValue: string;
+  lastUploadDate: string;
+  fileName?: string;
+}
+
 interface DataStore {
   rawData: Record<string, string | number | null>[] | null;
   processedData: ProcessedData | null;
@@ -76,6 +88,10 @@ interface DataStore {
   uploadedFiles: UploadedFile[];
   generatedReports: GeneratedReport[];
   showAdminPanel: boolean;
+  // CSV session management
+  saveCSVSession: () => void;
+  loadCSVSession: () => boolean;
+  clearCSVSession: () => void;
   setRawData: (data: Record<string, string | number | null>[], fileName?: string) => void;
   setFilterValue: (value: string) => void;
   setSelectedColumns: (columns: string[]) => void;
@@ -99,6 +115,7 @@ interface DataStore {
 
 const CHUNK_SIZE = 10000; // Process data in chunks of 10k rows
 const SAMPLE_SIZE = 1000; // Sample size for column type detection
+const MAX_STORAGE_SIZE = 50 * 1024 * 1024; // 50MB limit for localStorage
 
 const processDataInChunks = async (
   rawData: Record<string, string | number | null>[]
@@ -224,12 +241,22 @@ const processDataInChunks = async (
   };
 };
 
-// localStorage helper functions
+// Enhanced localStorage helper functions with size checking and compression
 const saveToLocalStorage = (key: string, data: any) => {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    const serializedData = JSON.stringify(data);
+    
+    // Check size limit
+    if (serializedData.length > MAX_STORAGE_SIZE) {
+      console.warn(`Data too large for localStorage (${serializedData.length} bytes). Skipping save for key: ${key}`);
+      return false;
+    }
+    
+    localStorage.setItem(key, serializedData);
+    return true;
   } catch (error) {
     console.warn('Failed to save to localStorage:', error);
+    return false;
   }
 };
 
@@ -241,6 +268,53 @@ const loadFromLocalStorage = (key: string, defaultValue: any = null) => {
     console.warn('Failed to load from localStorage:', error);
     return defaultValue;
   }
+};
+
+// Enhanced session management
+const saveCSVSessionToLocalStorage = (session: PersistedCSVSession) => {
+  const success = saveToLocalStorage('csvSession', session);
+  if (!success) {
+    // If main session fails, try to save at least essential data
+    const essentialSession = {
+      rawData: null, // Skip raw data if too large
+      processedData: session.processedData,
+      selectedColumns: session.selectedColumns,
+      filterValue: session.filterValue,
+      lastUploadDate: session.lastUploadDate,
+      fileName: session.fileName
+    };
+    saveToLocalStorage('csvSessionEssential', essentialSession);
+  }
+  return success;
+};
+
+const loadCSVSessionFromLocalStorage = (): PersistedCSVSession | null => {
+  const fullSession = loadFromLocalStorage('csvSession', null);
+  if (fullSession) {
+    return fullSession;
+  }
+  
+  // Fallback to essential session if full session not available
+  const essentialSession = loadFromLocalStorage('csvSessionEssential', null);
+  if (essentialSession) {
+    return {
+      rawData: null,
+      processedData: essentialSession.processedData,
+      selectedColumns: essentialSession.selectedColumns || [],
+      transformationHistory: [],
+      currentHistoryIndex: -1,
+      filterValue: essentialSession.filterValue || '',
+      lastUploadDate: essentialSession.lastUploadDate,
+      fileName: essentialSession.fileName
+    };
+  }
+  
+  return null;
+};
+
+const clearCSVSessionFromLocalStorage = () => {
+  localStorage.removeItem('csvSession');
+  localStorage.removeItem('csvSessionEssential');
 };
 
 export const useDataStore = create<DataStore>((set, get) => ({
@@ -259,6 +333,54 @@ export const useDataStore = create<DataStore>((set, get) => ({
   uploadedFiles: loadFromLocalStorage('uploadedFiles', []),
   generatedReports: loadFromLocalStorage('generatedReports', []),
   showAdminPanel: loadFromLocalStorage('showAdminPanel', false),
+  
+  // CSV session management methods
+  saveCSVSession: () => {
+    const state = get();
+    const session: PersistedCSVSession = {
+      rawData: state.rawData,
+      processedData: state.processedData,
+      selectedColumns: state.selectedColumns,
+      transformationHistory: state.transformationHistory,
+      currentHistoryIndex: state.currentHistoryIndex,
+      filterValue: state.filterValue,
+      lastUploadDate: new Date().toISOString(),
+      fileName: state.uploadedFiles[0]?.name // Get the most recent file name
+    };
+    
+    saveCSVSessionToLocalStorage(session);
+  },
+  
+  loadCSVSession: () => {
+    const session = loadCSVSessionFromLocalStorage();
+    if (session) {
+      set({
+        rawData: session.rawData,
+        processedData: session.processedData,
+        selectedColumns: session.selectedColumns,
+        transformationHistory: session.transformationHistory,
+        currentHistoryIndex: session.currentHistoryIndex,
+        filterValue: session.filterValue,
+        error: null
+      });
+      return true;
+    }
+    return false;
+  },
+  
+  clearCSVSession: () => {
+    clearCSVSessionFromLocalStorage();
+    set({
+      rawData: null,
+      processedData: null,
+      selectedColumns: [],
+      transformationHistory: [],
+      currentHistoryIndex: -1,
+      filterValue: "",
+      error: null
+    });
+  },
+
   setRawData: (data, fileName) => {
     if (!data || data.length === 0) {
       set({ 
@@ -269,6 +391,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
         currentHistoryIndex: -1,
         error: null 
       });
+      // Clear session when no data
+      get().clearCSVSession();
       return;
     }
 
@@ -311,6 +435,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
               showAdminPanel: false
             });
             
+            // Save CSV session after successful data processing
+            setTimeout(() => get().saveCSVSession(), 100);
+            
             // Also save showAdminPanel state to localStorage
             saveToLocalStorage('showAdminPanel', false);
           } else {
@@ -328,6 +455,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
               isProcessing: false,
               error: null
             });
+            
+            // Save CSV session after successful data processing
+            setTimeout(() => get().saveCSVSession(), 100);
           }
         }
       })
@@ -338,8 +468,16 @@ export const useDataStore = create<DataStore>((set, get) => ({
         });
       });
   },
-  setFilterValue: (value) => set({ filterValue: value }),
-  setSelectedColumns: (columns) => set({ selectedColumns: columns }),
+  setFilterValue: (value) => {
+    set({ filterValue: value });
+    // Save session when filter changes
+    setTimeout(() => get().saveCSVSession(), 100);
+  },
+  setSelectedColumns: (columns) => {
+    set({ selectedColumns: columns });
+    // Save session when selected columns change
+    setTimeout(() => get().saveCSVSession(), 100);
+  },
   getFilteredData: () => {
     const { processedData, filterValue, selectedColumns } = get();
     if (!processedData?.rows) return [];
@@ -399,6 +537,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
         currentHistoryIndex: newHistory.length - 1,
         error: null
       });
+      
+      // Save session after data update
+      setTimeout(() => get().saveCSVSession(), 100);
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Error updating data' 
@@ -415,6 +556,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
       currentHistoryIndex: currentHistoryIndex - 1,
       error: null
     });
+    
+    // Save session after undo
+    setTimeout(() => get().saveCSVSession(), 100);
   },
   redoTransformation: () => {
     const { transformationHistory, currentHistoryIndex } = get();
@@ -426,6 +570,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
       currentHistoryIndex: currentHistoryIndex + 1,
       error: null
     });
+    
+    // Save session after redo
+    setTimeout(() => get().saveCSVSession(), 100);
   },
   resetError: () => set({ error: null }),
   // Authentication methods
@@ -453,6 +600,9 @@ export const useDataStore = create<DataStore>((set, get) => ({
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
     localStorage.removeItem('showAdminPanel');
+    
+    // Clear CSV session on logout
+    get().clearCSVSession();
     
     set({ 
       isAuthenticated: false, 

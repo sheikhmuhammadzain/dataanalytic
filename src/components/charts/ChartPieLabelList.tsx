@@ -61,23 +61,63 @@ export function ChartPieLabelList() {
       };
     }
 
-    // Use different categorical column than other charts if possible
+    // Smart category selection for business insights
+    // PRIORITY 1: Product names for product performance analysis
+    const productNameColumn = headers.find(header => 
+      header.toLowerCase().includes('product_name') ||
+      header.toLowerCase().includes('productname') ||
+      header.toLowerCase() === 'product_name'
+    );
+    
+    // PRIORITY 2: Product categories for product mix analysis
+    const productCategoryColumn = headers.find(header => 
+      header.toLowerCase().includes('product_category') ||
+      header.toLowerCase().includes('category')
+    );
+    
+    // PRIORITY 3: Customer segments for market analysis
+    const segmentColumn = headers.find(header => 
+      header.toLowerCase().includes('customer_segment') ||
+      header.toLowerCase().includes('segment')
+    );
+
     let categoryKey = summary.categoricalColumns[0];
     let valueKey = summary.numericalColumns[0];
 
-    // Try to use a different categorical column for variety
-    const usedCategories = [summary.categoricalColumns[0]]; // Assuming first is used by area/bar
-    if (summary.categoricalColumns.length > 1) {
-      categoryKey = summary.categoricalColumns[1];
-    } else if (summary.categoricalColumns.length > 2) {
-      categoryKey = summary.categoricalColumns[2];
+    // Apply priority for category selection - Product names first!
+    if (productNameColumn && summary.categoricalColumns.includes(productNameColumn)) {
+      categoryKey = productNameColumn;
+    } else if (productCategoryColumn && summary.categoricalColumns.includes(productCategoryColumn)) {
+      categoryKey = productCategoryColumn;
+    } else if (segmentColumn && summary.categoricalColumns.includes(segmentColumn)) {
+      categoryKey = segmentColumn;
     }
 
-    // Try to use a different numerical column for variety
-    if (summary.numericalColumns.length > 2) {
-      valueKey = summary.numericalColumns[2];
-    } else if (summary.numericalColumns.length > 1) {
-      valueKey = summary.numericalColumns[1];
+    // Smart value selection for business metrics
+    // PRIORITY 1: Sales amount (revenue)
+    const salesAmountColumn = summary.numericalColumns.find(col => 
+      col.toLowerCase().includes('sales_amount') ||
+      col.toLowerCase().includes('revenue')
+    );
+    
+    // PRIORITY 2: Quantity sold
+    const quantityColumn = summary.numericalColumns.find(col => 
+      col.toLowerCase().includes('quantity_sold') ||
+      col.toLowerCase().includes('quantity')
+    );
+    
+    // PRIORITY 3: Stock level
+    const stockColumn = summary.numericalColumns.find(col => 
+      col.toLowerCase().includes('stock_level') ||
+      col.toLowerCase().includes('stock')
+    );
+
+    if (salesAmountColumn) {
+      valueKey = salesAmountColumn;
+    } else if (quantityColumn) {
+      valueKey = quantityColumn;
+    } else if (stockColumn) {
+      valueKey = stockColumn;
     }
 
     // Aggregate data by category
@@ -171,9 +211,17 @@ export function ChartPieLabelList() {
         insights={insights}
       />
       <CardHeader className="items-center pb-0">
-        <CardTitle>{categoryKey.replace(/_/g, ' ')} Distribution by {valueKey.replace(/_/g, ' ')}</CardTitle>
+        <CardTitle>
+          {categoryKey.toLowerCase().includes('product') 
+            ? `Product Sales Distribution` 
+            : `${categoryKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Distribution by ${valueKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`
+          }
+        </CardTitle>
         <CardDescription>
-          {categoryKey.replace(/_/g, ' ').toLowerCase()} distribution by {valueKey.replace(/_/g, ' ').toLowerCase()}
+          {categoryKey.toLowerCase().includes('product') 
+            ? `Product performance by ${valueKey.replace(/_/g, ' ').toLowerCase()}` 
+            : `${categoryKey.replace(/_/g, ' ').toLowerCase()} distribution by ${valueKey.replace(/_/g, ' ').toLowerCase()}`
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
@@ -209,15 +257,15 @@ export function ChartPieLabelList() {
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 leading-none font-medium">
           {insights.distribution === 'diverse' ? (
-            <>Well distributed across categories <TrendingUp className="h-4 w-4" /></>
+            <>Well distributed across {categoryKey.toLowerCase().includes('product') ? 'products' : 'categories'} <TrendingUp className="h-4 w-4" /></>
           ) : (
             <>"{insights.dominantCategory}" dominates with {insights.dominantPercentage}% <TrendingUp className="h-4 w-4" /></>
           )}
         </div>
         <div className="text-muted-foreground leading-none">
-          Total: {insights.totalCount} | {chartData.length} categories shown
+          Total: {insights.totalCount.toLocaleString()} | {chartData.length} {categoryKey.toLowerCase().includes('product') ? 'products' : 'categories'} shown
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 } 

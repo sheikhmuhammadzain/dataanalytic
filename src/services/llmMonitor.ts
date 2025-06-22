@@ -1,6 +1,6 @@
 interface LLMCall {
   id: string;
-  type: 'chat' | 'report' | 'explanation' | 'synthetic_data' | 'health_check';
+  type: 'chat' | 'report' | 'explanation' | 'synthetic_data' | 'health_check' | 'sales_forecast' | 'anomaly_detection' | 'whatif_simulation' | 'customer_insights';
   startTime: number;
   endTime?: number;
   duration?: number;
