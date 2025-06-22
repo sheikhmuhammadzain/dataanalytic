@@ -210,12 +210,12 @@ export const LandingPage: React.FC = () => {
       {/* Spotlight Effect - only visible in dark mode */}
       {theme === 'dark' && <Spotlight className="top-0 left-0 -translate-x-[60%] -translate-y-[10%]" fill="white" />}
 
-      {/* Theme-specific background */}
+      {/* Clean minimal background */}
       <div className="absolute inset-0">
         {theme === 'dark' ? (
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-gray-900/50" />
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#fff_70%,transparent_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-gray-50/30" />
         )}
       </div>
 
@@ -229,25 +229,24 @@ export const LandingPage: React.FC = () => {
               </span>
             </div>
             
-            {/* Theme toggle button */}
-            <button 
-              onClick={toggleTheme}
-              className={`p-2 rounded-full ${getThemeClass('bg-white/10 text-white hover:bg-white/20', 'bg-gray-100 text-gray-800 hover:bg-gray-200')} transition-colors mr-4`}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
               <a href="#features" className={`text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}>Features</a>
               <a href="#how-it-works" className={`text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}>How It Works</a>
               <a href="#visualizations" className={`text-sm font-medium ${getThemeClass('text-white/70 hover:text-white', 'text-gray-700 hover:text-[#0052A5]')} transition-colors`}>Visualizations</a>
-           
+              
+              {/* Theme toggle button */}
+              <button 
+                onClick={toggleTheme}
+                className={`p-2 rounded-full ${getThemeClass('bg-white/10 text-white hover:bg-white/20', 'bg-gray-100 text-gray-800 hover:bg-gray-200')} transition-colors`}
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
               
               <button 
                 onClick={() => setShowLoginPage(true)}
-                className={`${getThemeClass('bg-indigo-600 hover:bg-indigo-700 text-white', 'bg-[#0052A5] hover:bg-[#004080] text-white')} px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1`}
+                className={`${getThemeClass('bg-indigo-600 hover:bg-indigo-700 text-white', 'bg-[#193762] hover:bg-[#0f2644] text-white')} px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1`}
               >
                 Get Started <ArrowRight className="h-3.5 w-3.5" />
               </button>
@@ -298,74 +297,108 @@ export const LandingPage: React.FC = () => {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative py-20 sm:py-28">
-          <div className="container">
-            <div className="relative">
-              {/* Sunray beam effect - only in dark mode */}
-              {theme === 'dark' && (
-              <div className="absolute inset-0">
-                <div className="sunray-beam" />
-              </div>
-              )}
+        <section className="relative py-24 sm:py-32">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-4xl mx-auto">
               <motion.div
                 initial="initial"
                 animate="animate"
                 variants={stagger}
-                className="flex flex-col lg:flex-row justify-between items-center gap-8 relative"
+                className="space-y-8"
               >
-                {/* Text Section */}
-                <motion.div variants={fadeIn} className="lg:w-1/2 space-y-6 md:space-y-8">
-                  <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ${getThemeClass('text-white', 'text-gray-900')}`}>
-                    Your Go-To Solution for{' '}
-                    <span className={getThemeClass('bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text', 'text-[#0052A5]')}>
-                      Business Intelligence
-                    </span>
-                    {' '}and Data Analytics
-                  </h1>
-                  <p className={`text-lg ${getThemeClass('text-white/70', 'text-gray-600')}`}>
-                    Aggregate Data from Diverse Sources to Deliver Actionable Insights for Business Success. 
-                    Transform your data landscape with AI-powered analytics and automated processes.
+                {/* Main heading */}
+                <motion.h1 
+                  variants={fadeIn}
+                  className={`text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight ${getThemeClass('text-white', 'text-gray-900')}`}
+                >
+                  Transform Your Data Into{' '}
+                  <span className={getThemeClass('bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text', 'text-app-blue-800')}>
+                    Actionable Insights
+                  </span>
+                </motion.h1>
+
+                {/* Subtitle */}
+                <motion.p 
+                  variants={fadeIn}
+                  className={`text-xl sm:text-2xl max-w-3xl mx-auto leading-relaxed ${getThemeClass('text-white/80', 'text-gray-600')}`}
+                >
+                  Professional data analytics platform that aggregates data from diverse sources to deliver business intelligence and automated insights.
+                </motion.p>
+
+                                 {/* CTA Buttons */}
+                 <motion.div 
+                   variants={fadeIn}
+                   className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
+                 >
+                   {isLoading ? (
+                     <motion.div
+                       initial={{ opacity: 0, scale: 0.95 }}
+                       animate={{ opacity: 1, scale: 1 }}
+                       transition={{ duration: 0.3 }}
+                       className="flex items-center space-x-3"
+                     >
+                       <div className={`animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 ${getThemeClass('border-indigo-500', 'border-app-blue-800')}`}></div>
+                       <p className={`${getThemeClass('text-white/80', 'text-gray-700')} font-medium`}>
+                         Processing your data...
+                       </p>
+                     </motion.div>
+                   ) : (
+                     <>
+                       <button
+                         onClick={() => setShowLoginPage(true)}
+                         className={`px-8 py-4 text-lg font-semibold text-white ${getThemeClass('bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700', 'bg-[#193762] hover:bg-[#0f2644]')} rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center gap-2 shadow-lg hover:shadow-xl`}
+                       >
+                         Get Started
+                         <ArrowRight className="w-5 h-5" />
+                       </button>
+                       
+                       <button
+                         onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                         className={`px-8 py-4 text-lg font-semibold ${getThemeClass('text-white border border-white/20 hover:bg-white/10', 'text-app-blue-800 border border-app-blue-200 hover:bg-app-blue-50')} rounded-lg transition-all duration-200 flex items-center gap-2`}
+                       >
+                         Learn More
+                       </button>
+                     </>
+                   )}
+                 </motion.div>
+
+                 {/* Data Analytics Image */}
+                 <motion.div 
+                   variants={fadeIn}
+                   className="pt-16"
+                 >
+                   <div className={`max-w-2xl mx-auto p-4 rounded-2xl ${getThemeClass('bg-white/5 backdrop-blur-lg border border-white/10', 'bg-white border border-gray-100')} shadow-xl`}>
+                     <img 
+                       src={dataGif} 
+                       alt="Data Analytics Process" 
+                       className="w-full h-auto rounded-lg"
+                       style={{ maxHeight: "400px", objectFit: "contain" }}
+                     />
+                   </div>
+                 </motion.div>
+
+                {/* Simple trust indicators */}
+                <motion.div 
+                  variants={fadeIn}
+                  className="pt-12"
+                >
+                  <p className={`text-sm ${getThemeClass('text-white/60', 'text-gray-500')} mb-6`}>
+                    Trusted by data teams worldwide
                   </p>
-                </motion.div>
-
-                {/* Data GIF in Card */}
-                <div className={`p-3 absolute top-30 z-10 left-1/2 transform -translate-x-1/8 rounded-2xl ${getThemeClass('bg-white/5 backdrop-blur-lg border border-white/10', 'bg-white border border-gray-100')} shadow-xl flex justify-center`}>
-                    <img 
-                      src={dataGif} 
-                      alt="Data Analytics Process" 
-                      className="w-full h-auto rounded-lg"
-                      style={{ maxHeight: "350px", objectFit: "contain", maxWidth: "400px" }}
-                    />
+                  <div className="flex items-center justify-center space-x-8 opacity-60">
+                    <div className={`flex items-center space-x-2 ${getThemeClass('text-white/40', 'text-gray-400')}`}>
+                      <BarChart2 className="w-5 h-5" />
+                      <span className="text-sm font-medium">Analytics</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${getThemeClass('text-white/40', 'text-gray-400')}`}>
+                      <Brain className="w-5 h-5" />
+                      <span className="text-sm font-medium">AI-Powered</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${getThemeClass('text-white/40', 'text-gray-400')}`}>
+                      <Zap className="w-5 h-5" />
+                      <span className="text-sm font-medium">Real-time</span>
+                    </div>
                   </div>
-
-                {/* Get Started Section */}
-                <motion.div variants={fadeIn} className="lg:w-1/3 w-full flex flex-col items-center space-y-4 lg:space-y-6">
-                  {isLoading ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className={`flex flex-col items-center space-y-4 p-6 ${getThemeClass('bg-white/5 backdrop-blur-lg border border-white/10', 'bg-white border border-gray-100')} rounded-lg`}
-                    >
-                      <div className="relative">
-                        <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${getThemeClass('border-indigo-500', 'border-[#0052A5]')}`}></div>
-                        <div className={`absolute inset-0 animate-pulse rounded-full h-12 w-12 border-2 ${getThemeClass('border-indigo-400 opacity-50', 'border-[#0052A5] opacity-50')}`}></div>
-                      </div>
-                      <p className={`${getThemeClass('text-white/80', 'text-gray-800')} text-lg font-medium text-center`}>
-                        Performing ETL transformations on your data... Hang on!
-                      </p>
-                    </motion.div>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => setShowLoginPage(true)}
-                        className={`px-8 py-4 text-lg font-semibold text-white ${getThemeClass('bg-gradient-to-r from-indigo-500 to-purple-500', 'bg-gradient-to-r from-[#0052A5] to-[#0052A5]/80')} rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2`}
-                      >
-                        Get Started
-                        <ArrowRight className="w-5 h-5" />
-                      </button>
-                    </>
-                  )}
                 </motion.div>
               </motion.div>
             </div>

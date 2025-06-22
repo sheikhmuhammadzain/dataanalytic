@@ -10,41 +10,42 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 211 65% 19%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 211 65% 19%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --popover-foreground: 211 65% 19%;
+    --primary: 211 65% 19%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 211 20% 95%;
+    --secondary-foreground: 211 65% 19%;
+    --muted: 211 20% 95%;
+    --muted-foreground: 211 30% 46%;
+    --accent: 211 20% 92%;
+    --accent-foreground: 211 65% 19%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 211 20% 88%;
+    --input: 211 20% 90%;
+    --ring: 211 65% 19%;
     --radius: 0.5rem;
     
     /* Chart color variables */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 211 65% 19%;
+    --chart-2: 211 65% 30%;
+    --chart-3: 211 65% 40%;
+    --chart-4: 211 65% 50%;
+    --chart-5: 211 65% 60%;
     
-    /* Berger Paint website colors */
-    --berger-blue: 211 100% 32%;        /* #0052A5 */
-    --berger-red: 352 78% 56%;          /* #E63946 */
-    --berger-background: 0 0% 100%;     /* #FFFFFF */
-    --berger-card-bg: 210 17% 98%;      /* #F8F9FA */
-    --berger-text: 0 0% 20%;            /* #333333 */
-    --berger-text-secondary: 0 0% 40%;  /* #666666 */
-    --berger-border: 220 14% 91%;       /* #E5E7EB */
+    /* App theme colors */
+    --app-blue: 211 65% 19%;            /* #193762 */
+    --app-blue-light: 211 20% 95%;      /* Light blue variant */
+    --app-blue-medium: 211 30% 46%;     /* Medium blue variant */
+    --app-background: 0 0% 100%;        /* #FFFFFF */
+    --app-card-bg: 0 0% 100%;           /* #FFFFFF */
+    --app-text: 211 65% 19%;            /* #193762 */
+    --app-text-secondary: 211 30% 46%;  /* Muted blue text */
+    --app-border: 211 20% 88%;          /* Light blue border */
   }
 
   .dark {
@@ -77,21 +78,21 @@
   }
   
   .light-mode {
-    --background: var(--berger-background);
-    --foreground: var(--berger-text);
-    --card: var(--berger-card-bg);
-    --card-foreground: var(--berger-text);
-    --primary: var(--berger-blue);
+    --background: var(--app-background);
+    --foreground: var(--app-text);
+    --card: var(--app-card-bg);
+    --card-foreground: var(--app-text);
+    --primary: var(--app-blue);
     --primary-foreground: 0 0% 100%;
-    --secondary: var(--berger-red);
-    --secondary-foreground: 0 0% 100%;
-    --muted: 220 14% 96%;
-    --muted-foreground: var(--berger-text-secondary);
-    --accent: 210 20% 98%;
-    --accent-foreground: var(--berger-blue);
-    --border: var(--berger-border);
-    --input: var(--berger-border);
-    --ring: var(--berger-blue);
+    --secondary: var(--app-blue-light);
+    --secondary-foreground: var(--app-blue);
+    --muted: var(--app-blue-light);
+    --muted-foreground: var(--app-text-secondary);
+    --accent: var(--app-blue-light);
+    --accent-foreground: var(--app-blue);
+    --border: var(--app-border);
+    --input: var(--app-border);
+    --ring: var(--app-blue);
   }
 
   html {
@@ -108,29 +109,29 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
-  /* Berger-specific typography for light mode */
+  /* App-specific typography for light mode */
   .light-mode h1 {
-    @apply text-[#0052A5] font-bold;
+    @apply text-[#193762] font-bold;
   }
   
   .light-mode h2 {
-    @apply font-semibold text-[#333333];
+    @apply font-semibold text-[#193762];
   }
   
   .light-mode p {
-    @apply text-[#666666];
+    @apply text-slate-600;
   }
   
   .light-mode button.primary {
-    @apply bg-[#0052A5] text-white hover:bg-[#004080] transition-colors;
+    @apply bg-[#193762] text-white hover:bg-[#0f2644] transition-colors;
   }
   
   .light-mode button.secondary {
-    @apply bg-[#E63946] text-white hover:bg-[#d32836] transition-colors;
+    @apply bg-white text-[#193762] border border-[#193762] hover:bg-[#193762] hover:text-white transition-colors;
   }
   
   .light-mode .card {
-    @apply bg-white border border-gray-100 shadow-sm;
+    @apply bg-white border border-gray-200 shadow-sm;
   }
 }
 
