@@ -56,100 +56,86 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
   };
 
   const formatExplanation = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim());
+    if (!text.trim()) return [];
+    
     const formattedContent: JSX.Element[] = [];
     
-    lines.forEach((line, index) => {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) return;
+    // Split text into sections and process each
+    const sections = text.split(/(?=\*\*[^*]+\*\*:?)/).filter(section => section.trim());
+    
+    sections.forEach((section, sectionIndex) => {
+      const lines = section.split('\n').filter(line => line.trim());
       
-      // Check if it's a section heading (Key Insights:, Business Decisions:, etc.)
-      if (trimmedLine.endsWith(':') && (
-        trimmedLine.includes('Key Insights') ||
-        trimmedLine.includes('Business Decisions') ||
-        trimmedLine.includes('Recommendations') ||
-        trimmedLine.includes('Summary') ||
-        trimmedLine.includes('Analysis')
-      )) {
-        formattedContent.push(
-          <h4 key={index} className="text-base font-semibold text-gray-900 mt-6 mb-3 border-b border-gray-200 pb-1">
-            {trimmedLine}
-          </h4>
-        );
-        return;
-      }
-      
-      // Check if it's a traditional bullet point (•, *, -, or numbered)
-      if (trimmedLine.match(/^[•\*\-]\s/) || trimmedLine.match(/^\d+\.\s/)) {
-        const bulletContent = trimmedLine.replace(/^[•\*\-]\s*/, '').replace(/^\d+\.\s*/, '');
-        formattedContent.push(
-          <div key={index} className="flex items-start gap-3 mb-3 ml-2">
-            <span className="text-blue-500 mt-1.5 text-xs">●</span>
-            <span className="text-gray-700 leading-relaxed flex-1">
-              {bulletContent}
-            </span>
-          </div>
-        );
-        return;
-      }
-      
-      // Check if it's a bullet point that starts with bold text (AI pattern)
-      if (trimmedLine.startsWith('**') && trimmedLine.includes('**') && !trimmedLine.endsWith('**')) {
-        // This looks like a bullet point starting with bold text
-        const parts = trimmedLine.split('**');
-        const boldPart = parts[1]; // The text between the first pair of **
-        const restOfText = parts.slice(2).join('**'); // Everything after
+      lines.forEach((line, lineIndex) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return;
         
-        formattedContent.push(
-          <div key={index} className="flex items-start gap-3 mb-3 ml-2">
-            <span className="text-blue-500 mt-1.5 text-xs">●</span>
-            <span className="text-gray-700 leading-relaxed flex-1">
-              <strong className="font-semibold text-gray-900">{boldPart}</strong>
-              {restOfText}
-            </span>
-          </div>
-        );
-        return;
-      }
-      
-      // Check if it's a heading wrapped in ** ** (full line)
-      if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
-        formattedContent.push(
-          <h4 key={index} className="text-base font-semibold text-gray-900 mt-4 mb-2">
-            {trimmedLine.replace(/\*\*/g, '')}
-          </h4>
-        );
-        return;
-      }
-      
-      // Regular paragraph - but check if it contains inline bold formatting
-      if (trimmedLine.includes('**')) {
-        // Split by ** and alternate between regular and bold text
-        const parts = trimmedLine.split('**');
-        const formattedParts = parts.map((part, partIndex) => {
-          if (partIndex % 2 === 1) {
-            return <strong key={partIndex} className="font-semibold text-gray-900">{part}</strong>;
-          }
-          return part;
-        });
+        const uniqueKey = `${sectionIndex}-${lineIndex}`;
         
-        formattedContent.push(
-          <p key={index} className="text-gray-700 leading-relaxed mb-4">
-            {formattedParts}
-          </p>
-        );
-        return;
-      }
-      
-      // Regular paragraph
-      formattedContent.push(
-        <p key={index} className="text-gray-700 leading-relaxed mb-4">
-          {trimmedLine}
-        </p>
-      );
+        // Main section headings with ** **
+        if (trimmedLine.match(/^\*\*[^*]+\*\*:?\s*$/)) {
+          const heading = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '');
+          formattedContent.push(
+            <div key={uniqueKey} className="mt-6 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <h4 className="text-base font-semibold text-gray-900">
+                  {heading}
+                </h4>
+              </div>
+            </div>
+          );
+          return;
+        }
+        
+        // Numbered or bullet points
+        if (trimmedLine.match(/^\d+\.\s/) || trimmedLine.match(/^[•\*\-]\s/)) {
+          const content = trimmedLine.replace(/^(\d+\.\s|[•\*\-]\s)/, '');
+          const processedContent = processInlineFormatting(content);
+          
+          formattedContent.push(
+            <div key={uniqueKey} className="flex items-start gap-3 mb-3 ml-4">
+              <span className="text-blue-500 mt-1.5 text-xs">●</span>
+              <div className="text-gray-700 leading-relaxed flex-1">
+                {processedContent}
+              </div>
+            </div>
+          );
+          return;
+        }
+        
+        // Paragraphs with potential inline formatting
+        if (trimmedLine.length > 0) {
+          const processedContent = processInlineFormatting(trimmedLine);
+          formattedContent.push(
+            <p key={uniqueKey} className="text-gray-700 leading-relaxed mb-4">
+              {processedContent}
+            </p>
+          );
+        }
+      });
     });
     
     return formattedContent;
+  };
+
+  const processInlineFormatting = (text: string): (string | JSX.Element)[] => {
+    if (!text.includes('**')) {
+      return [text];
+    }
+    
+    const parts = text.split(/(\*\*[^*]+\*\*)/);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const boldText = part.replace(/\*\*/g, '');
+        return (
+          <strong key={index} className="font-semibold text-gray-900">
+            {boldText}
+          </strong>
+        );
+      }
+      return part;
+    });
   };
 
   return (
