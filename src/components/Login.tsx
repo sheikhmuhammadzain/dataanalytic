@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { useDataStore } from '../store/dataStore';
 
 interface LoginProps {
@@ -9,10 +9,8 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ theme, getThemeClass }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,30 +22,12 @@ export const Login: React.FC<LoginProps> = ({ theme, getThemeClass }) => {
     setError('');
     setIsLoading(true);
 
-    if (isSignUp) {
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        setIsLoading(false);
-        return;
-      }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
-        setIsLoading(false);
-        return;
-      }
-      setError('Sign up is for demo only. Please use login credentials: admin@qubit.com / admin123');
-      setIsLoading(false);
-      return;
-    }
-
     const success = login(email, password);
     if (!success) {
       setError('Invalid credentials. Use: admin@qubit.com / admin123');
     }
     setIsLoading(false);
   };
-
-
 
   return (
     <motion.div
@@ -66,10 +46,10 @@ export const Login: React.FC<LoginProps> = ({ theme, getThemeClass }) => {
           <LogIn className={`w-8 h-8 ${getThemeClass('text-indigo-400', 'text-[#0052A5]')}`} />
         </motion.div>
         <h2 className={`text-2xl font-bold ${getThemeClass('text-white', 'text-gray-900')} mb-2`}>
-          {isSignUp ? 'Create Account' : 'Welcome Back'}
+          Welcome Back
         </h2>
         <p className={`${getThemeClass('text-white/70', 'text-gray-600')}`}>
-          {isSignUp ? 'Sign up to access the admin panel' : 'Sign in to access the admin panel'}
+          Sign in to access the admin panel
         </p>
       </div>
 
@@ -125,25 +105,6 @@ export const Login: React.FC<LoginProps> = ({ theme, getThemeClass }) => {
           </div>
         </div>
 
-        {isSignUp && (
-          <div>
-            <label className={`block text-sm font-medium ${getThemeClass('text-white/90', 'text-gray-700')} mb-2`}>
-              Confirm Password
-            </label>
-            <div className="relative">
-              <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${getThemeClass('text-white/50', 'text-gray-400')}`} />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 rounded-lg ${getThemeClass('bg-white/10 border border-white/20 text-white placeholder-white/50', 'bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500')} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
-                placeholder="Confirm your password"
-                required
-              />
-            </div>
-          </div>
-        )}
-
         <motion.button
           type="submit"
           disabled={isLoading}
@@ -162,29 +123,12 @@ export const Login: React.FC<LoginProps> = ({ theme, getThemeClass }) => {
             </>
           ) : (
             <>
-              {isSignUp ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
-              {isSignUp ? 'Create Account' : 'Sign In'}
+              <LogIn className="w-5 h-5" />
+              Sign In
             </>
           )}
         </motion.button>
       </form>
-
-      <div className="mt-6 space-y-4">
-        <div className="text-center">
-          <button
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError('');
-              setEmail('');
-              setPassword('');
-              setConfirmPassword('');
-            }}
-            className={`text-sm ${getThemeClass('text-white/70 hover:text-white', 'text-gray-600 hover:text-[#0052A5]')} transition-colors`}
-          >
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-          </button>
-        </div>
-      </div>
     </motion.div>
   );
 }; 

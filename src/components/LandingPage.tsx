@@ -165,14 +165,7 @@ export const LandingPage: React.FC = () => {
         {/* Spotlight Effect - only visible in dark mode */}
         {theme === 'dark' && <Spotlight className="top-0 left-0 -translate-x-[60%] -translate-y-[10%]" fill="white" />}
 
-        {/* Theme-specific background */}
-        <div className="absolute inset-0">
-          {theme === 'dark' ? (
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-          ) : (
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#fff_70%,transparent_100%)]" />
-          )}
-        </div>
+
 
         <header className={`relative border-b ${getThemeClass('border-white/10 bg-black/50', 'border-gray-200 bg-white/90')} backdrop-blur-xl sticky top-0 z-50 w-full`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
