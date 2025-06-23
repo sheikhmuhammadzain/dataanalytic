@@ -72,18 +72,15 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
         
         const uniqueKey = `${sectionIndex}-${lineIndex}`;
         
-        // Business Impact section - special styling
+        // Business Impact section - clean minimal styling
         if (trimmedLine.match(/^\*\*Business Impact\*\*:?\s*/)) {
           const content = trimmedLine.replace(/^\*\*Business Impact\*\*:?\s*/, '');
           formattedContent.push(
-            <div key={uniqueKey} className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <h4 className="text-sm font-semibold text-blue-900 uppercase tracking-wide">
-                  Business Impact
-                </h4>
-              </div>
-              <p className="text-blue-800 font-medium leading-relaxed">
+            <div key={uniqueKey} className="mb-4 p-3 bg-blue-50/50 border border-blue-200/50 rounded-lg">
+              <h4 className="text-xs font-medium text-blue-700 mb-1.5 uppercase tracking-wider">
+                Business Impact
+              </h4>
+              <p className="text-sm text-blue-900 leading-relaxed">
                 {content}
               </p>
             </div>
@@ -91,18 +88,15 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
           return;
         }
         
-        // Recommended Action section - special styling
+        // Recommended Action section - clean minimal styling
         if (trimmedLine.match(/^\*\*Recommended Action\*\*:?\s*/)) {
           const content = trimmedLine.replace(/^\*\*Recommended Action\*\*:?\s*/, '');
           formattedContent.push(
-            <div key={uniqueKey} className="mt-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                <h4 className="text-sm font-semibold text-green-900 uppercase tracking-wide">
-                  Next Step
-                </h4>
-              </div>
-              <p className="text-green-800 font-medium leading-relaxed">
+            <div key={uniqueKey} className="mt-4 p-3 bg-green-50/50 border border-green-200/50 rounded-lg">
+              <h4 className="text-xs font-medium text-green-700 mb-1.5 uppercase tracking-wider">
+                Recommended Action
+              </h4>
+              <p className="text-sm text-green-900 leading-relaxed">
                 {content}
               </p>
             </div>
@@ -114,26 +108,23 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
         if (trimmedLine.match(/^\*\*[^*]+\*\*:?\s*$/)) {
           const heading = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '');
           formattedContent.push(
-            <div key={uniqueKey} className="mt-5 mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
-                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                  {heading}
-                </h4>
-              </div>
+            <div key={uniqueKey} className="mt-4 mb-2">
+              <h4 className="text-xs font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1">
+                {heading}
+              </h4>
             </div>
           );
           return;
         }
         
-        // Bullet points with enhanced styling
+        // Bullet points with minimal styling
         if (trimmedLine.match(/^[•\*\-]\s/)) {
           const content = trimmedLine.replace(/^[•\*\-]\s/, '');
           const processedContent = processInlineFormatting(content);
           
           formattedContent.push(
-            <div key={uniqueKey} className="flex items-start gap-3 mb-2 ml-3">
-              <span className="text-orange-500 mt-1.5 text-xs font-bold">●</span>
+            <div key={uniqueKey} className="flex items-start gap-2 mb-2">
+              <span className="text-gray-400 mt-1 text-xs">•</span>
               <div className="text-gray-700 leading-relaxed flex-1 text-sm">
                 {processedContent}
               </div>
@@ -146,7 +137,7 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
         if (trimmedLine.length > 0 && !trimmedLine.startsWith('**')) {
           const processedContent = processInlineFormatting(trimmedLine);
           formattedContent.push(
-            <p key={uniqueKey} className="text-gray-700 leading-relaxed mb-3 text-sm">
+            <p key={uniqueKey} className="text-gray-700 leading-relaxed mb-2 text-sm">
               {processedContent}
             </p>
           );
@@ -167,9 +158,9 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
       if (part.startsWith('**') && part.endsWith('**')) {
         const boldText = part.replace(/\*\*/g, '');
         return (
-          <strong key={index} className="font-semibold text-gray-900">
+          <span key={index} className="font-medium text-gray-900">
             {boldText}
-          </strong>
+          </span>
         );
       }
       return part;
@@ -182,12 +173,12 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
       <button
         onClick={handleExplain}
         className={className?.includes('static') 
-          ? "p-1.5 rounded-md bg-white border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md"
-          : "absolute top-3 right-3 z-10 p-1.5 rounded-md bg-white border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md"
+          ? "p-1 rounded-md bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700 transition-all duration-200"
+          : "absolute top-2 right-2 z-10 p-1 rounded-md bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 text-gray-500 hover:text-gray-700 transition-all duration-200"
         }
-        title="Get business insights"
+        title="Chart insights"
       >
-        <HelpCircle className="w-4 h-4" />
+        <HelpCircle className="w-3.5 h-3.5" />
       </button>
 
       {/* Explanation Modal */}
@@ -206,47 +197,44 @@ export const ChartExplanation: React.FC<ChartExplanationProps> = ({
             {/* Modal Container */}
             <div className="flex min-h-full items-center justify-center p-4">
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                initial={{ opacity: 0, scale: 0.96, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ type: "spring", duration: 0.3, bounce: 0.1 }}
-                className="relative w-full max-w-lg bg-white rounded-xl border border-gray-200 shadow-2xl overflow-hidden"
+                exit={{ opacity: 0, scale: 0.96, y: 20 }}
+                transition={{ type: "spring", duration: 0.25, bounce: 0.05 }}
+                className="relative w-full max-w-md bg-white rounded-lg border border-gray-200 shadow-xl overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="flex items-center justify-end px-6 py-4 border-b border-gray-100">
-               
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                  <h3 className="text-sm font-medium text-gray-900">Chart Insights</h3>
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors "
+                    className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 {/* Content */}
-                <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                <div className="px-4 py-3 max-h-[65vh] overflow-y-auto">
                   {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Loader2 className="w-6 h-6 animate-spin text-gray-400 mb-3" />
-                      <span className="text-sm text-gray-600">
-                        Generating business insights...
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400 mb-2" />
+                      <span className="text-xs text-gray-500">
+                        Analyzing data...
                       </span>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="prose prose-sm max-w-none">
-                        {formatExplanation(explanation)}
-                      </div>
+                    <div className="space-y-1">
+                      {formatExplanation(explanation)}
                     </div>
                   )}
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
-                  <div className="flex items-center justify-center text-xs text-gray-500">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></div>
-                    Powered by Qubit Dynamics
+                <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/30">
+                  <div className="flex items-center justify-center text-xs text-gray-400">
+                    AI-powered insights
                   </div>
                 </div>
               </motion.div>

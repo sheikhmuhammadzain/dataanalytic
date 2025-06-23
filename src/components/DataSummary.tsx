@@ -84,14 +84,14 @@ const KPICard: React.FC<KPICardProps> = ({
       className="h-full"
     >
       <Card className="border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow h-full flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">{label}</CardTitle>
-          <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-            <Icon className="h-4 w-4" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
+          <CardTitle className="text-xs font-medium text-gray-700">{label}</CardTitle>
+          <div className={`p-1.5 rounded-lg ${colorClasses[color]}`}>
+            <Icon className="h-3 w-3" />
           </div>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col justify-between">
-          <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
+        <CardContent className="flex-1 flex flex-col justify-between px-3 pb-3">
+          <div className="text-lg font-bold text-gray-900 mb-1">{value}</div>
           {change !== undefined && (
             <div className="flex items-center space-x-1">
               {changeType === 'positive' ? (
@@ -172,13 +172,13 @@ const InsightCard: React.FC<InsightCardProps> = ({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay }}
-      className={`p-4 rounded-lg border ${cardStyle}`}
+      className={`p-3 rounded-lg border ${cardStyle}`}
     >
-      <div className="flex items-start space-x-3">
-        <Icon className={`h-5 w-5 mt-0.5 ${textColor}`} />
+      <div className="flex items-start space-x-2">
+        <Icon className={`h-4 w-4 mt-0.5 ${textColor}`} />
         <div className="flex-1">
-          <h4 className="font-semibold text-gray-900 mb-1">{title}</h4>
-          <p className="text-sm text-gray-700 mb-2">{description}</p>
+          <h4 className="font-semibold text-sm text-gray-900 mb-0.5">{title}</h4>
+          <p className="text-xs text-gray-700 mb-1">{description}</p>
           {action && (
             <button className={`text-xs font-medium ${textColor} hover:underline`}>
               {action} →
@@ -1039,19 +1039,19 @@ export const DataSummary: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0"
+        className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-2 lg:space-y-0"
       >
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
               Sales Overview
             </h2>
           </div>
-          <p className="text-lg text-gray-600">
+          <p className="text-base text-gray-600">
             Real-time insights into your paint business performance
           </p>
         </div>
@@ -1059,18 +1059,18 @@ export const DataSummary: React.FC = () => {
       </motion.div>
 
       {/* Main Layout with Sidebar */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
         {/* Main Content Area */}
-        <div className="xl:col-span-3 space-y-8">
+        <div className="xl:col-span-3 space-y-4">
           {/* Key Performance Indicators */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
             {kpis.map((kpi, index) => (
               <KPICard key={index} {...kpi} />
             ))}
           </div>
 
           {/* Chart Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Sales Performance Trend */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1078,11 +1078,11 @@ export const DataSummary: React.FC = () => {
               transition={{ delay: 0.5 }}
             >
               <Card className="border-gray-200 bg-white shadow-sm relative">
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-gray-900">Sales Performance Trend</CardTitle>
-                      <CardDescription>Monthly sales vs targets (PKR Crores)</CardDescription>
+                      <CardTitle className="text-base text-gray-900">Sales Performance Trend</CardTitle>
+                      <CardDescription className="text-xs">Monthly sales vs targets (PKR Crores)</CardDescription>
                     </div>
                     <div className="flex items-center gap-3">
                       {/* Chart Explanation Button */}
@@ -1103,8 +1103,8 @@ export const DataSummary: React.FC = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-80">
+                <CardContent className="pb-4">
+                  <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
                         data={monthlyData}
@@ -1173,11 +1173,11 @@ export const DataSummary: React.FC = () => {
               transition={{ delay: 0.6 }}
             >
               <Card className="border-gray-200 bg-white shadow-sm relative">
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-gray-900">Quarterly Performance</CardTitle>
-                      <CardDescription>Sales by quarter (in Millions)</CardDescription>
+                      <CardTitle className="text-base text-gray-900">Quarterly Performance</CardTitle>
+                      <CardDescription className="text-xs">Sales by quarter (in Millions)</CardDescription>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="relative">
@@ -1212,8 +1212,8 @@ export const DataSummary: React.FC = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-80">
+                <CardContent className="pb-4">
+                  <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={currentQuarterlyData}
@@ -1259,44 +1259,44 @@ export const DataSummary: React.FC = () => {
             transition={{ delay: 0.6 }}
           >
             <Card className="border-gray-200 bg-white shadow-sm">
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <div className="flex items-center space-x-2">
-                  <PieChart className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-gray-900">Performance Metrics</CardTitle>
+                  <PieChart className="h-4 w-4 text-blue-600" />
+                  <CardTitle className="text-base text-gray-900">Performance Metrics</CardTitle>
                 </div>
-                <CardDescription>Key business indicators at a glance</CardDescription>
+                <CardDescription className="text-xs">Key business indicators at a glance</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
+              <CardContent className="pb-4">
+                <div className="space-y-3">
                   {/* Best Performing Product */}
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                     <div>
-                      <h4 className="font-semibold text-gray-900">Top Product</h4>
-                      <p className="text-green-700 font-medium">{businessInsights.bestProduct}</p>
-                      <p className="text-sm text-green-600">Leading in sales volume</p>
+                      <h4 className="font-semibold text-sm text-gray-900">Top Product</h4>
+                      <p className="text-green-700 font-medium text-sm">{businessInsights.bestProduct}</p>
+                      <p className="text-xs text-green-600">Leading in sales volume</p>
                     </div>
                     <div className="text-right">
-                      <TrendingUp className="h-8 w-8 text-green-600" />
+                      <TrendingUp className="h-6 w-6 text-green-600" />
                     </div>
                   </div>
 
                   {/* Best Province */}
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div>
-                      <h4 className="font-semibold text-gray-900">Top Province</h4>
-                      <p className="text-blue-700 font-medium">{businessInsights.bestRegion}</p>
-                      <p className="text-sm text-blue-600">Highest revenue contribution</p>
+                      <h4 className="font-semibold text-sm text-gray-900">Top Province</h4>
+                      <p className="text-blue-700 font-medium text-sm">{businessInsights.bestRegion}</p>
+                      <p className="text-xs text-blue-600">Highest revenue contribution</p>
                     </div>
                     <div className="text-right">
-                      <MapPin className="h-8 w-8 text-blue-600" />
+                      <MapPin className="h-6 w-6 text-blue-600" />
                     </div>
                   </div>
 
                   {/* Customer Satisfaction */}
-                  <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
                     <div>
-                      <h4 className="font-semibold text-gray-900">Customer Satisfaction</h4>
-                      <p className="text-purple-700 font-medium">{businessInsights.customerSatisfaction}/5.0</p>
+                      <h4 className="font-semibold text-sm text-gray-900">Customer Satisfaction</h4>
+                      <p className="text-purple-700 font-medium text-sm">{businessInsights.customerSatisfaction}/5.0</p>
                       <p className="text-sm text-purple-600">Based on recent feedback</p>
                     </div>
                     <div className="text-right">
@@ -1311,7 +1311,7 @@ export const DataSummary: React.FC = () => {
 
         {/* AI Insights Sidebar */}
         <div className="xl:col-span-1">
-          <div className="sticky top-8 space-y-6">
+          <div className="sticky top-6 space-y-3">
             {/* AI Insights */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -1319,15 +1319,15 @@ export const DataSummary: React.FC = () => {
               transition={{ delay: 0.5 }}
             >
               <Card className="border-gray-200 bg-white shadow-sm">
-                <CardHeader>
+                <CardHeader className="pb-2">
                   <div className="flex items-center space-x-2">
-                    <Activity className="h-5 w-5 text-blue-600" />
-                    <CardTitle className="text-gray-900">AI Insights</CardTitle>
+                    <Activity className="h-4 w-4 text-blue-600" />
+                    <CardTitle className="text-sm text-gray-900">AI Insights</CardTitle>
                   </div>
-                  <CardDescription>Real-time recommendations</CardDescription>
+                  <CardDescription className="text-xs">Real-time recommendations</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="pt-0 pb-3">
+                  <div className="space-y-2">
                     {insights.map((insight, index) => (
                       <InsightCard key={index} {...insight} />
                     ))}

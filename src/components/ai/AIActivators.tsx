@@ -52,7 +52,7 @@ const AIActivatorCard: React.FC<{
       <button
         onClick={onClick}
         disabled={!isEnabled}
-        className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left group ${
+        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left group ${
           isEnabled 
             ? `${bgColor} ${borderColor} hover:shadow-md cursor-pointer` 
             : 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'
@@ -60,18 +60,18 @@ const AIActivatorCard: React.FC<{
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className={`w-5 h-5 ${color}`} />
-              <h4 className="font-semibold text-gray-900 group-hover:text-gray-800">
+            <div className="flex items-center gap-2 mb-1">
+              <Icon className={`w-4 h-4 ${color}`} />
+              <h4 className="font-semibold text-sm text-gray-900 group-hover:text-gray-800">
                 {title}
               </h4>
               {beta && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
                   Beta
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-600 group-hover:text-gray-700">
+            <p className="text-xs text-gray-600 group-hover:text-gray-700">
               {description}
             </p>
           </div>
@@ -80,7 +80,7 @@ const AIActivatorCard: React.FC<{
             animate={{ x: isHovered && isEnabled ? 4 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ArrowRight className={`w-4 h-4 ${isEnabled ? color : 'text-gray-400'}`} />
+            <ArrowRight className={`w-3 h-3 ${isEnabled ? color : 'text-gray-400'}`} />
           </motion.div>
         </div>
       </button>
@@ -218,18 +218,18 @@ export const AIActivators: React.FC<AIActivatorsProps> = ({
   return (
     <>
       <Card className={`border-gray-200 bg-white shadow-sm ${className}`}>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <div className="flex items-center space-x-2">
-            <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-indigo-600" />
-              <Zap className="h-4 w-4 text-yellow-500" />
+            <div className="flex items-center gap-1">
+              <Brain className="h-4 w-4 text-indigo-600" />
+              <Zap className="h-3 w-3 text-yellow-500" />
             </div>
-            <CardTitle className="text-gray-900">AI Activators</CardTitle>
+            <CardTitle className="text-sm text-gray-900">AI Activators</CardTitle>
           </div>
-          <CardDescription>Quick data interactions</CardDescription>
+          <CardDescription className="text-xs">Quick data interactions</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="pt-0 pb-3">
+          <div className="space-y-2">
             {activators.map((activator, index) => (
               <AIActivatorCard
                 key={activator.id}
@@ -241,7 +241,7 @@ export const AIActivators: React.FC<AIActivatorsProps> = ({
           </div>
           
           {/* Footer hint */}
-          <div className="mt-4 pt-3 border-t border-gray-100">
+          <div className="mt-3 pt-2 border-t border-gray-100">
             <p className="text-xs text-gray-500 text-center">
               Click any activator to get started with AI-powered analysis
             </p>
