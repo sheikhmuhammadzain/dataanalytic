@@ -214,7 +214,7 @@ export function ChartBarLabelCustom() {
       <CardHeader>
         <CardTitle>
           {isProductChart 
-            ? `Top ${chartData.length} Products by Frequency` 
+            ? `Top 10 Products by Sales (PKR)` 
             : `Top ${chartData.length} ${xAxisKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} by ${yAxisKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`
           }
         </CardTitle>

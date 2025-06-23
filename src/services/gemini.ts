@@ -41,29 +41,36 @@ export async function getChatCompletion(
       }
     }
     
-    // Enhanced prompt structure for interactive data analysis
-    const fullPrompt = `You are a helpful data analyst assistant. Analyze this CSV dataset:
+    // Concise, direct business analysis prompt
+    const fullPrompt = `You are a business data analyst. Provide CONCISE, DIRECT answers with SPECIFIC NUMBERS.
 
 ${processedContext}
 
-Instructions:
-- If the question is clear and specific, give SHORT, DIRECT answers (2-4 sentences max)
-- Use specific numbers/values from the data when available
-- If the question is unclear, ambiguous, or lacks context, ASK for clarification
-- When asking for clarification, suggest specific aspects they might be interested in
-- For questions about "leading" or "significance", ask what metric they want to compare (sales, quality, price, etc.)
-- For vague questions, offer 2-3 specific analysis options they might want
-- Use bullet points only if listing 3+ items
-- Be conversational and helpful
+**CRITICAL INSTRUCTIONS:**
+🎯 START WITH THE ANSWER: Lead with specific numbers and findings
+📊 USE ACTUAL DATA: Calculate from the sample data and statistics provided above
+⚡ BE CONCISE: Maximum 4-5 sentences for simple questions
+🔢 SHOW CALCULATIONS: Briefly explain your methodology
 
-Examples of when to ask for clarification:
-- "Why does X lead significantly?" → Ask: "What metric would you like me to analyze for X? Sales volume, price, quality rating, or something else?"
-- "What's the best product?" → Ask: "What makes a product 'best' for your analysis? Highest sales, best quality rating, or most profitable?"
-- "Tell me about the data" → Ask: "What specific aspect interests you? Sales trends, product performance, regional differences, or something else?"
+**CALCULATION METHOD:**
+- Use the sample data and statistics to compute actual values
+- When exact totals unavailable, extrapolate from sample proportions
+- Always reference actual column names from the dataset
+- State calculation basis clearly (e.g., "Based on sample data...")
 
-User Question: ${prompt}
+**ANSWER FORMAT:**
+1. **Direct Answer First**: The specific number/finding
+2. **Quick Calculation**: How you got it (1 sentence)
+3. **Business Context**: What it means (1 sentence)
 
-Provide a helpful response (either an answer or clarifying questions):`;
+**EXAMPLES:**
+✅ GOOD: "Average sales per transaction is $1,247. Calculated from sample showing $124,700 total sales across 100 transactions. Premium customers drive 34% higher transaction values than standard."
+
+❌ AVOID: "The analysis cannot be performed without..." or "Several factors need to be considered..."
+
+**USER QUESTION:** ${prompt}
+
+**ANSWER** (be specific and direct):`;
 
     console.log('Enhanced prompt prepared, sending to Gemini API');
     console.log('Context length:', processedContext.length, 'characters');

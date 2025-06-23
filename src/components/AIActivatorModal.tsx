@@ -57,99 +57,151 @@ export const AIActivatorModal: React.FC<AIActivatorModalProps> = ({
     
     const formattedContent: JSX.Element[] = [];
     
-    // Split text into sections and process each
-    const sections = text.split(/(?=\*\*[^*]+\*\*:?)/).filter(section => section.trim());
+    // Split content into lines and process each line
+    const lines = text.split('\n').filter(line => line.trim());
     
-    sections.forEach((section, sectionIndex) => {
-      const lines = section.split('\n').filter(line => line.trim());
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return;
       
-      lines.forEach((line, lineIndex) => {
-        const trimmedLine = line.trim();
-        if (!trimmedLine) return;
+      const uniqueKey = `line-${index}`;
+      
+      // Main headers (### or ##)
+      if (trimmedLine.match(/^#{2,3}\s+/)) {
+        const headerText = trimmedLine.replace(/^#+\s+/, '');
+        const level = trimmedLine.match(/^(#+)/)?.[1].length || 2;
         
-        const uniqueKey = `${sectionIndex}-${lineIndex}`;
-        
-        // Main section headers
-        if (trimmedLine.match(/^\*\*[^*]+\*\*:?\s*/)) {
-          const heading = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '');
-          
-          // Special styling for key sections
-          if (heading.includes('Summary') || heading.includes('Impact')) {
-            const content = trimmedLine.replace(/^\*\*[^*]+\*\*:?\s*/, '');
-            formattedContent.push(
-              <div key={uniqueKey} className={`mb-6 p-4 rounded-lg border-l-4 ${colorClasses}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <IconComponent className="w-4 h-4" />
-                  <h4 className="text-sm font-semibold uppercase tracking-wide">
-                    {heading}
-                  </h4>
-                </div>
-                <p className="font-medium leading-relaxed">
-                  {content}
-                </p>
-              </div>
-            );
-            return;
-          }
-          
-          // Regular section headers
+        if (level === 2) {
           formattedContent.push(
-            <div key={uniqueKey} className="mt-5 mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
-                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                  {heading}
-                </h4>
-              </div>
-            </div>
+            <h2 key={uniqueKey} className="text-lg font-bold text-gray-900 mt-8 mb-4 pb-2 border-b-2 border-gray-200">
+              {headerText}
+            </h2>
           );
-          return;
+        } else {
+          formattedContent.push(
+            <h3 key={uniqueKey} className="text-base font-semibold text-gray-900 mt-6 mb-3">
+              {headerText}
+            </h3>
+          );
         }
+        return;
+      }
+      
+      // Bold section headers (**TEXT**)
+      if (trimmedLine.match(/^\*\*[^*]+\*\*:?\s*$/)) {
+        const heading = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '');
+        formattedContent.push(
+          <div key={uniqueKey} className="mt-6 mb-3">
+            <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide bg-gray-50 px-3 py-2 rounded-md border-l-4 border-blue-500">
+              {heading}
+            </h4>
+          </div>
+        );
+        return;
+      }
+      
+      // Bullet points (•, *, -)
+      if (trimmedLine.match(/^[•\*\-]\s+/)) {
+        const bulletContent = trimmedLine.replace(/^[•\*\-]\s+/, '');
+        const processedContent = processInlineFormatting(bulletContent);
         
-        // Bullet points
-        if (trimmedLine.match(/^[•\*\-]\s/)) {
-          const content = trimmedLine.replace(/^[•\*\-]\s/, '');
+        formattedContent.push(
+          <div key={uniqueKey} className="flex items-start gap-3 mb-3 ml-4">
+            <span className="text-blue-600 mt-1 text-sm font-bold flex-shrink-0">•</span>
+            <div className="text-gray-700 leading-relaxed text-sm flex-1">
+              {processedContent}
+            </div>
+          </div>
+        );
+        return;
+      }
+      
+      // Numbered lists (1., 2., etc.)
+      if (trimmedLine.match(/^\d+\.\s+/)) {
+        const numberMatch = trimmedLine.match(/^(\d+)\.\s+(.+)$/);
+        if (numberMatch) {
+          const [, number, content] = numberMatch;
           const processedContent = processInlineFormatting(content);
           
           formattedContent.push(
-            <div key={uniqueKey} className="flex items-start gap-3 mb-2 ml-3">
-              <span className="text-blue-500 mt-1.5 text-xs font-bold">●</span>
-              <div className="text-gray-700 leading-relaxed flex-1 text-sm">
+            <div key={uniqueKey} className="flex items-start gap-3 mb-3 ml-4">
+              <span className="text-blue-600 mt-1 text-sm font-semibold flex-shrink-0 bg-blue-50 rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                {number}
+              </span>
+              <div className="text-gray-700 leading-relaxed text-sm flex-1">
                 {processedContent}
               </div>
             </div>
           );
-          return;
         }
-        
-        // Regular paragraphs
-        if (trimmedLine.length > 0 && !trimmedLine.startsWith('**')) {
-          const processedContent = processInlineFormatting(trimmedLine);
+        return;
+      }
+      
+      // Special highlighted sections
+      if (trimmedLine.match(/^\*\*[^*]+\*\*:\s*.+/)) {
+        const match = trimmedLine.match(/^\*\*([^*]+)\*\*:\s*(.+)$/);
+        if (match) {
+          const [, label, content] = match;
+          const processedContent = processInlineFormatting(content);
+          
           formattedContent.push(
-            <p key={uniqueKey} className="text-gray-700 leading-relaxed mb-3 text-sm">
-              {processedContent}
-            </p>
+            <div key={uniqueKey} className={`mb-4 p-4 rounded-lg border-l-4 ${colorClasses}`}>
+              <div className="flex items-start gap-2">
+                <IconComponent className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h5 className="text-sm font-semibold text-gray-900 mb-1">
+                    {label}
+                  </h5>
+                  <div className="text-gray-700 text-sm leading-relaxed">
+                    {processedContent}
+                  </div>
+                </div>
+              </div>
+            </div>
           );
         }
-      });
+        return;
+      }
+      
+      // Regular paragraphs
+      if (trimmedLine.length > 0) {
+        const processedContent = processInlineFormatting(trimmedLine);
+        formattedContent.push(
+          <p key={uniqueKey} className="text-gray-700 leading-relaxed mb-4 text-sm">
+            {processedContent}
+          </p>
+        );
+      }
     });
     
     return formattedContent;
   };
 
   const processInlineFormatting = (text: string): (string | JSX.Element)[] => {
-    if (!text.includes('**')) {
+    if (!text.includes('**') && !text.includes('*')) {
       return [text];
     }
     
-    const parts = text.split(/(\*\*[^*]+\*\*)/);
+    // Handle both bold (**text**) and italic (*text*)
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/);
+    
     return parts.map((part, index) => {
+      // Bold text
       if (part.startsWith('**') && part.endsWith('**')) {
         const boldText = part.replace(/\*\*/g, '');
         return (
-          <strong key={index} className="font-semibold text-gray-900">
+          <strong key={index} className="font-semibold text-gray-900 bg-blue-50 px-1 rounded">
             {boldText}
           </strong>
+        );
+      }
+      // Italic text
+      if (part.startsWith('*') && part.endsWith('*') && !part.includes('**')) {
+        const italicText = part.replace(/\*/g, '');
+        return (
+          <em key={index} className="italic text-gray-600">
+            {italicText}
+          </em>
         );
       }
       return part;
@@ -159,24 +211,24 @@ export const AIActivatorModal: React.FC<AIActivatorModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] overflow-hidden">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
             onClick={onClose}
           />
           
-          {/* Modal Container */}
-          <div className="flex min-h-full items-center justify-center p-4">
+          {/* Modal Container - Centered in viewport */}
+          <div className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", duration: 0.3, bounce: 0.1 }}
-              className="relative w-full max-w-2xl bg-white rounded-xl border border-gray-200 shadow-2xl overflow-hidden"
+              className="relative w-full max-w-2xl bg-white rounded-xl border border-gray-200 shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -198,7 +250,7 @@ export const AIActivatorModal: React.FC<AIActivatorModalProps> = ({
               </div>
 
               {/* Content */}
-              <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="px-6 py-4 flex-1 overflow-y-auto">
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-gray-400 mb-3" />

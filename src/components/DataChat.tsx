@@ -368,23 +368,30 @@ export const DataChat: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Prepare context for the AI
+  // Prepare comprehensive context for the AI with accurate business data
   const getDataContext = useCallback((): string => {
     if (!processedData) return 'No data loaded.';
 
     const { summary, rows } = processedData;
     
-    // Get sample data rows for better context
-    const sampleSize = Math.min(5, rows.length);
+    // Increase sample size for better analysis context (10-50 rows depending on dataset size)
+    const sampleSize = Math.min(Math.max(50, Math.floor(rows.length * 0.05)), 100);
     const sampleRows = rows.slice(0, sampleSize);
     
-    // Format sample data for context
+    // Format sample data in a more structured way
     const sampleDataString = sampleRows.map((row, index) => {
-      const rowData = summary.headers.map(header => `${header}: ${row[header]}`).join(', ');
+      const rowData = summary.headers.map(header => {
+        const value = row[header];
+        // Better value formatting for readability
+        if (typeof value === 'number') {
+          return `${header}: ${value.toLocaleString()}`;
+        }
+        return `${header}: "${value}"`;
+      }).join(', ');
       return `Row ${index + 1}: {${rowData}}`;
     }).join('\n');
     
-    // Enhanced statistical summary with categorical distributions
+    // Enhanced statistical summary with business-focused metrics
     const statisticalSummary = Object.entries(summary.columnStats)
       .map(([col, stats]) => {
         if (!stats || Object.keys(stats).length === 0) return `- ${col}: No statistics available`;
@@ -392,34 +399,56 @@ export const DataChat: React.FC = () => {
         const isNumerical = summary.numericalColumns.includes(col);
         
         if (isNumerical) {
-          // Numerical statistics
+          // Enhanced numerical statistics with business context
           const statEntries = Object.entries(stats)
-            .filter(([key]) => ['min', 'max', 'mean', 'median', 'stdDev'].includes(key));
+            .filter(([key]) => ['min', 'max', 'mean', 'median', 'stdDev', 'totalCount'].includes(key));
+          
           const formattedStats = statEntries.map(([key, value]) => {
             if (typeof value === 'number') {
+              // Format based on column name for better business context
+              if (col.toLowerCase().includes('price') || col.toLowerCase().includes('sales') || col.toLowerCase().includes('revenue')) {
+                return `${key}: ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              } else if (col.toLowerCase().includes('quantity') || col.toLowerCase().includes('count')) {
+                return `${key}: ${Math.round(value).toLocaleString()}`;
+              }
               return `${key}: ${value.toFixed(2)}`;
             }
             return `${key}: ${value}`;
           }).join(', ');
           
-          return `- ${col} (numerical): ${formattedStats}, total: ${stats.totalCount || 0} values`;
+          // Add business context for key metrics
+          let businessContext = '';
+          if (col.toLowerCase().includes('sales') || col.toLowerCase().includes('revenue')) {
+            const mean = stats.mean || 0;
+            const total = (stats.totalCount || 0) * mean;
+            businessContext = `\n    📊 Business Insight: Total ${col} = ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+          }
+          
+          return `- ${col} (numerical): ${formattedStats}${businessContext}`;
         } else {
-          // Categorical statistics with value counts
+          // Enhanced categorical statistics with business insights
           const { uniqueValues, mostCommon, totalCount, valueCounts } = stats;
           
           let categoryInfo = `- ${col} (categorical): ${uniqueValues} unique values, ${totalCount} total entries`;
           
           if (mostCommon && mostCommon.length > 0) {
-            categoryInfo += '\n  Value distribution:';
-            mostCommon.slice(0, 5).forEach(({ value, count, percentage }) => {
-              categoryInfo += `\n    • "${value}": ${count} times (${percentage.toFixed(1)}%)`;
+            categoryInfo += '\n  📋 Value Distribution:';
+            mostCommon.slice(0, 10).forEach(({ value, count, percentage }) => {
+              categoryInfo += `\n    • "${value}": ${count.toLocaleString()} times (${percentage.toFixed(1)}%)`;
             });
             
-            // Add specific counts for common status-like fields
-            if (valueCounts && (col.toLowerCase().includes('status') || col.toLowerCase().includes('state') || col.toLowerCase().includes('type'))) {
-              categoryInfo += '\n  Quick reference:';
-              Object.entries(valueCounts).forEach(([value, count]) => {
-                categoryInfo += `\n    • ${value}: ${count}`;
+            // Business-specific quick reference for important categorical fields
+            if (valueCounts && (
+              col.toLowerCase().includes('product') || 
+              col.toLowerCase().includes('category') || 
+              col.toLowerCase().includes('segment') ||
+              col.toLowerCase().includes('province') ||
+              col.toLowerCase().includes('region') ||
+              col.toLowerCase().includes('type')
+            )) {
+              categoryInfo += `\n  🎯 Business Categories (${col}):`;
+              Object.entries(valueCounts).slice(0, 15).forEach(([value, count]) => {
+                categoryInfo += `\n    • ${value}: ${count.toLocaleString()} records`;
               });
             }
           }
@@ -429,39 +458,126 @@ export const DataChat: React.FC = () => {
       })
       .join('\n');
     
-    // Enhanced context with more detailed information
+    // Calculate business-specific aggregations
+    const businessMetrics = (() => {
+      try {
+        // Identify key business columns
+        const salesColumns = summary.headers.filter(h => 
+          h.toLowerCase().includes('sales') || 
+          h.toLowerCase().includes('revenue') || 
+          h.toLowerCase().includes('amount')
+        );
+        
+        const quantityColumns = summary.headers.filter(h => 
+          h.toLowerCase().includes('quantity') || 
+          h.toLowerCase().includes('volume') || 
+          h.toLowerCase().includes('liter')
+        );
+        
+        const dateColumns = summary.headers.filter(h => 
+          h.toLowerCase().includes('date') || 
+          h.toLowerCase().includes('time') || 
+          h.toLowerCase().includes('month') ||
+          h.toLowerCase().includes('quarter')
+        );
+        
+        const productColumns = summary.headers.filter(h => 
+          h.toLowerCase().includes('product') || 
+          h.toLowerCase().includes('item')
+        );
+        
+        const regionColumns = summary.headers.filter(h => 
+          h.toLowerCase().includes('province') || 
+          h.toLowerCase().includes('region') || 
+          h.toLowerCase().includes('location')
+        );
+
+        let metrics = '\n🔍 BUSINESS ANALYSIS CONTEXT:\n';
+        
+        if (salesColumns.length > 0) {
+          metrics += `- Sales/Revenue columns: ${salesColumns.join(', ')}\n`;
+        }
+        if (quantityColumns.length > 0) {
+          metrics += `- Quantity/Volume columns: ${quantityColumns.join(', ')}\n`;
+        }
+        if (dateColumns.length > 0) {
+          metrics += `- Time-based columns: ${dateColumns.join(', ')}\n`;
+        }
+        if (productColumns.length > 0) {
+          metrics += `- Product-related columns: ${productColumns.join(', ')}\n`;
+        }
+        if (regionColumns.length > 0) {
+          metrics += `- Geographic columns: ${regionColumns.join(', ')}\n`;
+        }
+
+        // Calculate transaction-level metrics if possible
+        if (salesColumns.length > 0 && rows.length > 0) {
+          const salesCol = salesColumns[0];
+          const salesValues = rows.map(row => Number(row[salesCol]) || 0).filter(val => val > 0);
+          
+          if (salesValues.length > 0) {
+            const totalSales = salesValues.reduce((sum, val) => sum + val, 0);
+            const avgTransaction = totalSales / salesValues.length;
+            const transactions = salesValues.length;
+            
+            metrics += `\n💰 KEY BUSINESS METRICS:\n`;
+            metrics += `- Total Transactions: ${transactions.toLocaleString()}\n`;
+            metrics += `- Total Sales Value: ${totalSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+            metrics += `- Average Transaction Value: ${avgTransaction.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+          }
+        }
+
+        return metrics;
+      } catch (error) {
+        return '\n🔍 BUSINESS ANALYSIS CONTEXT: Unable to calculate advanced metrics\n';
+      }
+    })();
+
+    // Enhanced context with comprehensive business data
     const context = `
+📊 COMPREHENSIVE DATASET ANALYSIS CONTEXT
+
 DATASET OVERVIEW:
-- Total Rows: ${summary.rowCount}
+- Total Rows: ${summary.rowCount.toLocaleString()}
 - Total Columns: ${summary.columnCount}
-- File contains ${summary.numericalColumns.length} numerical and ${summary.categoricalColumns.length} categorical columns
+- Data Density: ${summary.numericalColumns.length} numerical and ${summary.categoricalColumns.length} categorical columns
+- Sample Size Provided: ${sampleSize} rows (${((sampleSize/summary.rowCount)*100).toFixed(1)}% of dataset)
 
-COLUMN INFORMATION:
-Numerical Columns: ${summary.numericalColumns.length > 0 ? summary.numericalColumns.join(', ') : 'None'}
-Categorical Columns: ${summary.categoricalColumns.length > 0 ? summary.categoricalColumns.join(', ') : 'None'}
+COLUMN STRUCTURE:
+📈 Numerical Columns (${summary.numericalColumns.length}): ${summary.numericalColumns.length > 0 ? summary.numericalColumns.join(', ') : 'None'}
+📋 Categorical Columns (${summary.categoricalColumns.length}): ${summary.categoricalColumns.length > 0 ? summary.categoricalColumns.join(', ') : 'None'}
 
-DETAILED STATISTICAL SUMMARY:
+COMPREHENSIVE STATISTICAL SUMMARY:
 ${statisticalSummary}
+${businessMetrics}
 
-SAMPLE DATA (First ${sampleSize} rows):
+📋 REPRESENTATIVE SAMPLE DATA (First ${sampleSize} rows):
 ${sampleDataString}
 
-DATA INSIGHTS:
-- Dataset has ${summary.rowCount} records across ${summary.columnCount} different attributes
-- Numerical analysis available for: ${summary.numericalColumns.join(', ') || 'No numerical columns'}
-- Categorical analysis available for: ${summary.categoricalColumns.join(', ') || 'No categorical columns'}
-${summary.rowCount > 1000 ? `- Large dataset with ${summary.rowCount} rows - statistical summaries provided above` : '- Medium-sized dataset suitable for detailed analysis'}
-- Categorical value counts are provided above for frequency-based questions
+🎯 ANALYSIS CAPABILITIES & INSTRUCTIONS:
 
-ANALYSIS CAPABILITIES:
-You can answer questions about:
-- Specific counts (e.g., "How many tickets are closed?", "How many customers are active?")
-- Distributions and percentages for categorical data
-- Statistical analysis for numerical data
-- Trends, patterns, and comparisons between columns
-- Data quality and completeness
+FOR BUSINESS ANALYTICS QUESTIONS:
+1. **Average Sales Analysis**: Calculate average transaction values using numerical sales columns
+2. **Product Performance**: Compare categories using product and sales data  
+3. **Revenue per Unit**: Calculate revenue/liter ratios using quantity and sales columns
+4. **Temporal Analysis**: Identify seasonal patterns using date/time columns
+5. **Segmentation**: Analyze performance across regions, product types, customer segments
 
-The user is asking questions about this dataset. Please provide accurate, data-driven responses based on the information above.
+ACCURACY REQUIREMENTS:
+- Use ACTUAL DATA from the sample and statistics provided above
+- Reference specific column names and values from the dataset
+- Calculate percentages, averages, and totals based on real numbers
+- Identify trends using the time-based columns if available
+- Compare performance using categorical breakdowns (regions, products, etc.)
+
+RESPONSE FORMAT:
+- Start with specific numerical findings
+- Reference actual column names and values
+- Provide actionable business insights
+- Use the statistical summaries for accurate calculations
+- Mention data limitations if sample size affects conclusions
+
+IMPORTANT: This dataset contains ${summary.rowCount.toLocaleString()} real business records. Use the provided statistics and sample data to give accurate, data-driven responses. When calculating averages, totals, or comparisons, reference the actual statistical values provided above.
     `.trim();
 
     return context;
@@ -685,12 +801,20 @@ The user is asking questions about this dataset. Please provide accurate, data-d
             <div className="border-t border-gray-200 bg-white">
               {/* Quick Questions (show only when no messages or just welcome message) */}
               {messages.length <= 1 && processedData && (
-                <div className="p-4 pb-2">
-                  <div className="flex flex-wrap gap-2">
+                <div className="p-4 pb-3 border-b border-gray-100/80">
+                  <div className="mb-3">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      Quick Questions
+                    </h4>
+                  </div>
+                  
+                  {/* Quick Actions Row */}
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {[
                       "Summarize this data",
                       processedData.summary.numericalColumns.length > 0 ? `Analyze ${processedData.summary.numericalColumns[0]}` : null,
-                      "Find patterns",
+                      "Find patterns"
                     ].filter((q): q is string => Boolean(q)).map((question, index) => (
                       <motion.button
                         key={index}
@@ -698,11 +822,40 @@ The user is asking questions about this dataset. Please provide accurate, data-d
                         disabled={isLoading}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="group px-3 py-2 text-xs bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-lg transition-all duration-200 border border-gray-200 hover:border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="group px-3 py-1.5 text-xs bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 hover:text-blue-800 rounded-full transition-all duration-200 border border-blue-200 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
                       >
                         <span className="relative z-10">{question}</span>
                       </motion.button>
                     ))}
+                  </div>
+
+                  {/* Business Analytics Questions */}
+                  <div className="space-y-2">
+                    <h5 className="text-xs font-medium text-gray-600 uppercase tracking-wide">Business Analytics</h5>
+                    <div className="grid gap-2">
+                      {[
+                        "What is the average sales value per transaction over time and across segments?",
+                        "How do premium vs. standard products perform in terms of sales and volume?",
+                        "What is the revenue generated per liter across product categories and customer segments?",
+                        "Which months or quarters show peak or off-peak sales, and how does stock adjust accordingly?"
+                      ].map((question, index) => (
+                        <motion.button
+                          key={index}
+                          onClick={() => handleSendMessage(question)}
+                          disabled={isLoading}
+                          whileHover={{ scale: 1.005 }}
+                          whileTap={{ scale: 0.995 }}
+                          className="group text-left p-3 text-sm bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 border border-emerald-300 flex items-center justify-center mt-0.5">
+                              <span className="text-xs font-bold text-emerald-700">{index + 1}</span>
+                            </div>
+                            <span className="leading-relaxed">{question}</span>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

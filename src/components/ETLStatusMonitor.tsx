@@ -386,7 +386,7 @@ export const ETLStatusMonitor: React.FC<ETLStatusMonitorProps> = ({
               { label: 'Storage System', status: storageSystemStatus },
               { label: 'API Connections', status: apiConnectionStatus },
               ...(llmMetrics ? [{ 
-                label: `AI Service (${Math.round(llmMetrics.apiHealthScore)}% Health)`, 
+                label: 'AI Service', 
                 status: llmMetrics.currentStatus === 'healthy' || llmMetrics.currentStatus === 'busy' ? 'Connected' : 
                         llmMetrics.currentStatus === 'error' ? 'Error' : 'Standby'
               }] : [])
