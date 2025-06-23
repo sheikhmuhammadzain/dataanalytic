@@ -4,7 +4,7 @@ import { TrendingUp } from "lucide-react"
 import { Box } from "@visx/stats"
 import { Group } from "@visx/group"
 import { scaleBand, scaleLinear } from "@visx/scale"
-import { useMemo } from "react"
+import { useMemo, useRef, useEffect, useState } from "react"
 import { useDataStore } from "../../store/dataStore"
 import { ChartExplanation } from "../ChartExplanation"
 import { quantile, extent } from "d3-array"
@@ -33,194 +33,239 @@ const formatNumber = (num: number): string => {
   }
 };
 
-// Box plot component
-const BoxPlot = ({ data, width, height, margin = { top: 20, right: 30, bottom: 60, left: 80 } }: any) => {
-  const innerWidth = width - margin.left - margin.right
-  const innerHeight = height - margin.bottom - margin.top
+// Responsive Box plot component
+const ResponsiveBoxPlot = ({ data, margin = { top: 20, right: 30, bottom: 80, left: 80 } }: any) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
 
-  // Create scales
+  // Handle responsive sizing
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const height = 400; // Fixed height for better UX
+        
+        // Ensure minimum width for readability
+        const width = Math.max(containerWidth, 320);
+        
+        setDimensions({ width, height });
+      }
+    };
+
+    // Initial sizing
+    updateDimensions();
+
+    // Add resize listener
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Cleanup
+    return () => resizeObserver.disconnect();
+  }, [data]);
+
+  const { width, height } = dimensions;
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.bottom - margin.top;
+
+  // Create scales with responsive considerations
   const xScale = scaleBand({
     range: [0, innerWidth],
     domain: data.map((d: any) => d.category),
-    padding: 0.2,
-  })
+    padding: Math.min(0.3, Math.max(0.1, 0.3 - (data.length - 3) * 0.02)), // Dynamic padding
+  });
 
   const yScale = scaleLinear({
     range: [innerHeight, 0],
     domain: extent(data.flatMap((d: any) => [d.min, d.max])) as [number, number],
-  })
+  });
 
-  const boxWidth = xScale.bandwidth()
+  const boxWidth = xScale.bandwidth();
+  
+  // Responsive font sizes
+  const fontSize = Math.max(10, Math.min(12, width / 80));
+  const axisFontSize = Math.max(8, Math.min(11, width / 100));
 
   return (
-    <svg width={width} height={height}>
-      <Group left={margin.left} top={margin.top}>
-        {data.map((d: any, i: number) => {
-          const x = xScale(d.category) || 0
-          const boxHeight = Math.abs(yScale(d.q1) - yScale(d.q3))
-          const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#3b82f6']
-          const color = colors[i % colors.length]
+    <div ref={containerRef} className="w-full h-full min-h-[400px]">
+      <svg width={width} height={height} className="overflow-visible">
+        <Group left={margin.left} top={margin.top}>
+          {data.map((d: any, i: number) => {
+            const x = xScale(d.category) || 0;
+            const boxHeight = Math.abs(yScale(d.q1) - yScale(d.q3));
+            const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#3b82f6'];
+            const color = colors[i % colors.length];
 
-          return (
-            <Group key={d.category}>
-              {/* Whiskers */}
-              <line
-                x1={x + boxWidth / 2}
-                x2={x + boxWidth / 2}
-                y1={yScale(d.min)}
-                y2={yScale(d.q1)}
-                stroke={color}
-                strokeWidth={2}
-              />
-              <line
-                x1={x + boxWidth / 2}
-                x2={x + boxWidth / 2}
-                y1={yScale(d.q3)}
-                y2={yScale(d.max)}
-                stroke={color}
-                strokeWidth={2}
-              />
-              
-              {/* Whisker caps */}
-              <line
-                x1={x + boxWidth * 0.25}
-                x2={x + boxWidth * 0.75}
-                y1={yScale(d.min)}
-                y2={yScale(d.min)}
-                stroke={color}
-                strokeWidth={2}
-              />
-              <line
-                x1={x + boxWidth * 0.25}
-                x2={x + boxWidth * 0.75}
-                y1={yScale(d.max)}
-                y2={yScale(d.max)}
-                stroke={color}
-                strokeWidth={2}
-              />
-              
-              {/* Box */}
-              <rect
-                x={x}
-                y={yScale(d.q3)}
-                width={boxWidth}
-                height={boxHeight}
-                fill={color}
-                fillOpacity={0.6}
-                stroke={color}
-                strokeWidth={2}
-              />
-              
-              {/* Median line */}
-              <line
-                x1={x}
-                x2={x + boxWidth}
-                y1={yScale(d.median)}
-                y2={yScale(d.median)}
-                stroke="#1f2937"
-                strokeWidth={3}
-              />
-              
-              {/* Outliers */}
-              {d.outliers?.map((outlier: number, idx: number) => (
-                <circle
-                  key={idx}
-                  cx={x + boxWidth / 2}
-                  cy={yScale(outlier)}
-                  r={3}
-                  fill={color}
-                  fillOpacity={0.8}
+            return (
+              <Group key={d.category}>
+                {/* Whiskers */}
+                <line
+                  x1={x + boxWidth / 2}
+                  x2={x + boxWidth / 2}
+                  y1={yScale(d.min)}
+                  y2={yScale(d.q1)}
+                  stroke={color}
+                  strokeWidth={Math.max(1, boxWidth / 40)}
                 />
-              ))}
+                <line
+                  x1={x + boxWidth / 2}
+                  x2={x + boxWidth / 2}
+                  y1={yScale(d.q3)}
+                  y2={yScale(d.max)}
+                  stroke={color}
+                  strokeWidth={Math.max(1, boxWidth / 40)}
+                />
+                
+                {/* Whisker caps */}
+                <line
+                  x1={x + boxWidth * 0.25}
+                  x2={x + boxWidth * 0.75}
+                  y1={yScale(d.min)}
+                  y2={yScale(d.min)}
+                  stroke={color}
+                  strokeWidth={Math.max(1, boxWidth / 40)}
+                />
+                <line
+                  x1={x + boxWidth * 0.25}
+                  x2={x + boxWidth * 0.75}
+                  y1={yScale(d.max)}
+                  y2={yScale(d.max)}
+                  stroke={color}
+                  strokeWidth={Math.max(1, boxWidth / 40)}
+                />
+                
+                {/* Box */}
+                <rect
+                  x={x}
+                  y={yScale(d.q3)}
+                  width={boxWidth}
+                  height={boxHeight}
+                  fill={color}
+                  fillOpacity={0.6}
+                  stroke={color}
+                  strokeWidth={Math.max(1, boxWidth / 30)}
+                />
+                
+                {/* Median line */}
+                <line
+                  x1={x}
+                  x2={x + boxWidth}
+                  y1={yScale(d.median)}
+                  y2={yScale(d.median)}
+                  stroke="#1f2937"
+                  strokeWidth={Math.max(2, boxWidth / 25)}
+                />
+                
+                {/* Outliers */}
+                {d.outliers?.map((outlier: number, idx: number) => (
+                  <circle
+                    key={idx}
+                    cx={x + boxWidth / 2}
+                    cy={yScale(outlier)}
+                    r={Math.max(2, Math.min(4, boxWidth / 20))}
+                    fill={color}
+                    fillOpacity={0.8}
+                  />
+                ))}
+              </Group>
+            );
+          })}
+          
+          {/* Y-axis */}
+          <line
+            x1={0}
+            x2={0}
+            y1={0}
+            y2={innerHeight}
+            stroke="#6b7280"
+            strokeWidth={1}
+          />
+          
+          {/* X-axis */}
+          <line
+            x1={0}
+            x2={innerWidth}
+            y1={innerHeight}
+            y2={innerHeight}
+            stroke="#6b7280"
+            strokeWidth={1}
+          />
+          
+          {/* Y-axis ticks and labels */}
+          {yScale.ticks(5).map(tick => (
+            <Group key={tick}>
+              <line
+                x1={-5}
+                x2={0}
+                y1={yScale(tick)}
+                y2={yScale(tick)}
+                stroke="#6b7280"
+                strokeWidth={1}
+              />
+              <text
+                x={-10}
+                y={yScale(tick)}
+                dy="0.32em"
+                textAnchor="end"
+                fontSize={axisFontSize}
+                fill="#6b7280"
+              >
+                {formatNumber(tick)}
+              </text>
             </Group>
-          )
-        })}
+          ))}
+          
+          {/* X-axis labels with responsive text wrapping */}
+          {data.map((d: any) => {
+            const x = (xScale(d.category) || 0) + boxWidth / 2;
+            const maxLabelLength = Math.max(6, Math.floor(boxWidth / 6));
+            const label = d.category.length > maxLabelLength 
+              ? d.category.substring(0, maxLabelLength) + '...' 
+              : d.category;
+            
+            return (
+              <text
+                key={d.category}
+                x={x}
+                y={innerHeight + 20}
+                textAnchor="middle"
+                fontSize={axisFontSize}
+                fill="#6b7280"
+                transform={width < 600 ? `rotate(-45, ${x}, ${innerHeight + 20})` : undefined}
+              >
+                {label}
+              </text>
+            );
+          })}
+        </Group>
         
-        {/* Y-axis */}
-        <line
-          x1={0}
-          x2={0}
-          y1={0}
-          y2={innerHeight}
-          stroke="#6b7280"
-          strokeWidth={1}
-        />
-        
-        {/* X-axis */}
-        <line
-          x1={0}
-          x2={innerWidth}
-          y1={innerHeight}
-          y2={innerHeight}
-          stroke="#6b7280"
-          strokeWidth={1}
-        />
-        
-        {/* Y-axis ticks and labels */}
-        {yScale.ticks(5).map(tick => (
-          <Group key={tick}>
-            <line
-              x1={-5}
-              x2={0}
-              y1={yScale(tick)}
-              y2={yScale(tick)}
-              stroke="#6b7280"
-              strokeWidth={1}
-            />
-            <text
-              x={-10}
-              y={yScale(tick)}
-              dy="0.32em"
-              textAnchor="end"
-              fontSize={12}
-              fill="#6b7280"
-            >
-              {formatNumber(tick)}
-            </text>
-          </Group>
-        ))}
-        
-        {/* X-axis labels */}
-        {data.map((d: any) => (
-          <text
-            key={d.category}
-            x={(xScale(d.category) || 0) + boxWidth / 2}
-            y={innerHeight + 20}
-            textAnchor="middle"
-            fontSize={11}
-            fill="#6b7280"
-            transform={`rotate(-45, ${(xScale(d.category) || 0) + boxWidth / 2}, ${innerHeight + 20})`}
-          >
-            {d.category.length > 12 ? d.category.substring(0, 12) + '...' : d.category}
-          </text>
-        ))}
-      </Group>
-      
-      {/* Axis labels */}
-      <text
-        x={width / 2}
-        y={height - 5}
-        textAnchor="middle"
-        fontSize={14}
-        fill="#374151"
-        fontWeight="500"
-      >
-        Category
-      </text>
-      <text
-        x={20}
-        y={height / 2}
-        textAnchor="middle"
-        fontSize={14}
-        fill="#374151"
-        fontWeight="500"
-        transform={`rotate(-90, 20, ${height / 2})`}
-      >
-        Value
-      </text>
-    </svg>
-  )
-}
+        {/* Responsive axis labels */}
+        <text
+          x={width / 2}
+          y={height - 10}
+          textAnchor="middle"
+          fontSize={fontSize}
+          fill="#374151"
+          fontWeight="500"
+        >
+          Category
+        </text>
+        <text
+          x={20}
+          y={height / 2}
+          textAnchor="middle"
+          fontSize={fontSize}
+          fill="#374151"
+          fontWeight="500"
+          transform={`rotate(-90, 20, ${height / 2})`}
+        >
+          Value
+        </text>
+      </svg>
+    </div>
+  );
+};
 
 export function ChartBoxPlot() {
   const processedData = useDataStore(state => state.processedData);
@@ -318,7 +363,7 @@ export function ChartBoxPlot() {
         outliers,
         count: values.length
       };
-    }).slice(0, 6); // Limit to 6 categories for better visualization
+    }).slice(0, 8); // Allow more categories on full width
 
     return {
       boxPlotData,
@@ -330,7 +375,7 @@ export function ChartBoxPlot() {
 
   if (noData) {
     return (
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Price Distribution by Category</CardTitle>
           <CardDescription>
@@ -362,7 +407,7 @@ export function ChartBoxPlot() {
   }, [boxPlotData]);
 
   return (
-    <Card className="relative">
+    <Card className="w-full">
       <ChartExplanation
         chartType="Box Plot"
         dataKeys={{ categoryKey, valueKey }}
@@ -375,17 +420,13 @@ export function ChartBoxPlot() {
           Statistical distribution showing quartiles, median, and outliers across categories
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="w-full h-96 overflow-x-auto">
-          <BoxPlot 
-            data={boxPlotData} 
-            width={Math.max(800, boxPlotData.length * 120)} 
-            height={384}
-          />
+      <CardContent className="p-0">
+        <div className="w-full">
+          <ResponsiveBoxPlot data={boxPlotData} />
         </div>
       </CardContent>
-      <CardFooter>
-        <div className="flex w-full items-start gap-2 text-sm">
+      <CardFooter className="flex-col items-start gap-2 text-sm">
+        <div className="flex w-full items-start gap-2">
           <div className="grid gap-2">
             <div className="flex items-center gap-2 leading-none font-medium">
               {insights && (

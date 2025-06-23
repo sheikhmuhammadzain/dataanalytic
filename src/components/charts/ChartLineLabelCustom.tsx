@@ -126,8 +126,24 @@ export function ChartLineLabelCustom() {
     // Aggregate data by X-axis key for better visualization
     const dataMap = new Map();
     processedData.rows.forEach(row => {
-      const xValue = String(row[xKey] || 'Unknown');
+      let xValue = String(row[xKey] || 'Unknown');
       const yValue = Number(row[yKey]) || 0;
+      
+      // For time series, group by month for better 6-month view
+      if (isTimeSeries && xValue !== 'Unknown') {
+        try {
+          const date = new Date(xValue);
+          if (!isNaN(date.getTime())) {
+            // Format as "MMM YYYY" for monthly grouping
+            xValue = date.toLocaleDateString('en-US', { 
+              month: 'short', 
+              year: 'numeric' 
+            });
+          }
+        } catch (e) {
+          // Keep original value if date parsing fails
+        }
+      }
       
       if (dataMap.has(xValue)) {
         // For time series, sum the values; for categories, take average
@@ -135,13 +151,15 @@ export function ChartLineLabelCustom() {
         dataMap.set(xValue, {
           sum: existing.sum + yValue,
           count: existing.count + 1,
-          value: isTimeSeries ? existing.sum + yValue : (existing.sum + yValue) / (existing.count + 1)
+          value: isTimeSeries ? existing.sum + yValue : (existing.sum + yValue) / (existing.count + 1),
+          originalDate: isTimeSeries ? new Date(row[xKey] || Date.now()) : null
         });
       } else {
         dataMap.set(xValue, {
           sum: yValue,
           count: 1,
-          value: yValue
+          value: yValue,
+          originalDate: isTimeSeries ? new Date(row[xKey] || Date.now()) : null
         });
       }
     });
@@ -150,32 +168,46 @@ export function ChartLineLabelCustom() {
     let data = Array.from(dataMap.entries()).map(([key, aggregated]) => ({
       [xKey]: key,
       [yKey]: Math.round(aggregated.value * 100) / 100, // Round to 2 decimal places
+      originalDate: aggregated.originalDate
     }));
 
     // Sort data for better line visualization
     if (isTimeSeries) {
-      // For time series, try to sort chronologically
+      // For time series, sort chronologically using original dates
       data = data.sort((a, b) => {
+        if (a.originalDate && b.originalDate) {
+          return a.originalDate.getTime() - b.originalDate.getTime();
+        }
+        
+        // Fallback: try to parse the formatted date strings
         const aVal = a[xKey];
         const bVal = b[xKey];
+        const aDate = new Date(aVal + ' 1'); // Add day for parsing "MMM YYYY"
+        const bDate = new Date(bVal + ' 1');
         
-        // Try to parse as date first
-        const aDate = new Date(aVal);
-        const bDate = new Date(bVal);
         if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
           return aDate.getTime() - bDate.getTime();
         }
         
-        // Fallback to string comparison
+        // Final fallback to string comparison
         return aVal.localeCompare(bVal);
       });
+      
+      // Remove the helper originalDate property
+      data = data.map(({ originalDate, ...rest }) => rest);
     } else {
       // For categories, sort by value descending
       data = data.sort((a, b) => b[yKey] - a[yKey]);
     }
 
-    // Limit to reasonable number of points (12-15 for readability)
-    data = data.slice(0, 15);
+    // Limit to 6 months of data for better focus
+    if (isTimeSeries) {
+      // For time series, get the most recent 6 months
+      data = data.slice(-6);
+    } else {
+      // For categorical data, limit to 6 categories
+      data = data.slice(0, 6);
+    }
 
     const config = {
       [yKey]: {
@@ -255,8 +287,8 @@ export function ChartLineLabelCustom() {
         <CardTitle>{chartTitle}</CardTitle>
         <CardDescription>
           {isTimeSeries 
-            ? `${yAxisKey.replace(/_/g, ' ').toLowerCase()} progression over time periods`
-            : `${yAxisKey.replace(/_/g, ' ').toLowerCase()} comparison across ${xAxisKey.replace(/_/g, ' ').toLowerCase()}`
+            ? `${yAxisKey.replace(/_/g, ' ').toLowerCase()} progression over the last 6 months`
+            : `${yAxisKey.replace(/_/g, ' ').toLowerCase()} comparison across top 6 ${xAxisKey.replace(/_/g, ' ').toLowerCase()}`
           }
         </CardDescription>
       </CardHeader>
@@ -334,7 +366,7 @@ export function ChartLineLabelCustom() {
           )}
         </div>
         <div className="text-muted-foreground leading-none">
-          Range: {trend.range} | {chartData.length} data points
+          Range: {trend.range} | {chartData.length} {isTimeSeries ? 'months' : 'categories'}
         </div>
       </CardFooter>
     </Card>
