@@ -352,7 +352,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </h3>
               <SidebarItem
                 icon={Settings}
-                label="Dashboard"
+                label="Admin Panel"
                 onClick={() => handleItemClick(onShowAdminPanel)}
                 isMobile={isMobile}
               />

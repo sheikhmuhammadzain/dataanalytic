@@ -23,80 +23,120 @@ interface Message {
 const formatMessageContent = (content: string) => {
   let formattedContent = content;
 
-  // Headers (### and ##)
+  // Headers with better spacing and hierarchy
   formattedContent = formattedContent.replace(
     /###\s*(.*?)(?:\n|$)/g,
-    '<h3 class="text-lg font-semibold text-gray-900 mt-4 mb-2 border-b border-gray-200 pb-1 break-words">$1</h3>'
+    '<h3 class="text-lg font-semibold text-gray-900 mt-6 mb-4 border-b border-gray-200 pb-2 break-words leading-tight">$1</h3>'
   );
   
   formattedContent = formattedContent.replace(
     /##\s*(.*?)(?:\n|$)/g,
-    '<h2 class="text-xl font-semibold text-gray-900 mt-4 mb-3 break-words">$1</h2>'
+    '<h2 class="text-xl font-bold text-gray-900 mt-8 mb-5 break-words leading-tight">$1</h2>'
   );
 
-  // Bold (**text**)
+  // Main headers (single #)
+  formattedContent = formattedContent.replace(
+    /^#\s*(.*?)(?:\n|$)/gm,
+    '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-6 break-words leading-tight">$1</h1>'
+  );
+
+  // Bold text with better styling
   formattedContent = formattedContent.replace(
     /\*\*(.*?)\*\*/g,
-    '<strong class="font-medium text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded break-words">$1</strong>'
+    '<strong class="font-semibold text-gray-900 bg-blue-50 px-2 py-1 rounded-md break-words">$1</strong>'
   );
 
-  // Code blocks (```code```)
+  // Code blocks with better styling
   formattedContent = formattedContent.replace(
     /```([\s\S]*?)```/g,
-    '<div class="bg-gray-50 border border-gray-200 rounded-lg p-3 my-3 font-mono text-sm overflow-x-auto break-all"><code class="text-gray-800 whitespace-pre-wrap">$1</code></div>'
+    '<div class="bg-gray-900 border border-gray-800 rounded-lg p-4 my-4 font-mono text-sm overflow-x-auto shadow-inner"><code class="text-green-400 whitespace-pre-wrap block leading-relaxed">$1</code></div>'
   );
 
-  // Inline code (`code`)
+  // Inline code with better contrast
   formattedContent = formattedContent.replace(
     /`([^`]+)`/g,
-    '<code class="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono break-words">$1</code>'
+    '<code class="bg-gray-800 text-green-300 px-2 py-1 rounded text-sm font-mono break-words shadow-sm">$1</code>'
   );
 
-  // Numbered lists (1. item)
+  // Enhanced numbered lists with better spacing
   formattedContent = formattedContent.replace(
     /^\s*(\d+)\.\s+(.*)/gm,
-    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-6 h-6 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">$1</span><span class="text-gray-700 flex-1 leading-relaxed">$2</span></div>'
+    '<div class="flex items-start gap-4 my-3 p-2 rounded-lg hover:bg-gray-50 transition-colors break-words"><span class="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mt-0.5 shadow-sm">$1</span><span class="text-gray-700 flex-1 leading-relaxed pt-1">$2</span></div>'
   );
 
-  // Unordered lists (- item or • item)
+  // Enhanced unordered lists with better styling
   formattedContent = formattedContent.replace(
     /^\s*[-•]\s+(.*)/gm,
-    '<div class="flex items-start gap-3 my-2 break-words"><span class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></span><span class="text-gray-700 flex-1 leading-relaxed">$1</span></div>'
+    '<div class="flex items-start gap-4 my-3 p-2 rounded-lg hover:bg-gray-50 transition-colors break-words"><span class="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mt-2.5 shadow-sm"></span><span class="text-gray-700 flex-1 leading-relaxed">$1</span></div>'
   );
 
-  // Key-value pairs (key: value)
+  // Enhanced key-value pairs with better visual separation
   formattedContent = formattedContent.replace(
     /^\s*([A-Za-z\s]+):\s*([^\n]+)/gm,
-    '<div class="flex flex-col sm:flex-row gap-1 sm:gap-2 my-1 break-words"><span class="font-medium text-blue-600 flex-shrink-0">$1:</span><span class="text-gray-700 flex-1">$2</span></div>'
+    '<div class="flex flex-col sm:flex-row gap-2 my-3 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-400 break-words"><span class="font-semibold text-blue-700 flex-shrink-0 text-sm uppercase tracking-wide">$1:</span><span class="text-gray-800 flex-1 font-medium">$2</span></div>'
   );
 
-  // Statistics formatting (numbers with %)
+  // Enhanced statistics formatting
   formattedContent = formattedContent.replace(
     /(\d+(?:\.\d+)?%)/g,
-    '<span class="font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded whitespace-nowrap">$1</span>'
+    '<span class="font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full text-sm whitespace-nowrap shadow-sm border border-green-200">$1</span>'
   );
 
-  // Large numbers formatting
+  // Enhanced large numbers formatting
   formattedContent = formattedContent.replace(
     /\b(\d{1,3}(?:,\d{3})+|\d{4,})\b/g,
-    '<span class="font-medium text-blue-600 whitespace-nowrap">$1</span>'
+    '<span class="font-semibold text-blue-700 bg-blue-100 px-2 py-1 rounded-md whitespace-nowrap shadow-sm">$1</span>'
   );
 
-  // Newlines to line breaks
-  formattedContent = formattedContent.replace(/\n/g, '<br />');
+  // Section separators (--- or ***)
+  formattedContent = formattedContent.replace(
+    /^[\-\*]{3,}$/gm,
+    '<hr class="my-6 border-t-2 border-gray-200" />'
+  );
+
+  // Quotes (> text)
+  formattedContent = formattedContent.replace(
+    /^>\s*(.*)/gm,
+    '<blockquote class="border-l-4 border-blue-400 bg-blue-50 pl-4 py-3 my-4 italic text-gray-700 rounded-r-lg">$1</blockquote>'
+  );
+
+  // Tables (basic support for | separated values)
+  formattedContent = formattedContent.replace(
+    /\|(.+)\|/g,
+    (match, content) => {
+      const cells = content.split('|').map((cell: string) => cell.trim());
+      const cellsHtml = cells.map((cell: string) => `<td class="px-3 py-2 border-b border-gray-200 text-sm">${cell}</td>`).join('');
+      return `<table class="w-full my-4 bg-white rounded-lg shadow-sm border border-gray-200"><tr class="bg-gray-50">${cellsHtml}</tr></table>`;
+    }
+  );
+
+  // Important notes or alerts (Note: text)
+  formattedContent = formattedContent.replace(
+    /^(Note|Important|Warning|Tip):\s*(.*)/gmi,
+    '<div class="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3"><span class="font-semibold text-yellow-800 text-sm uppercase tracking-wide flex-shrink-0">$1:</span><span class="text-yellow-800 flex-1">$2</span></div>'
+  );
+
+  // Better paragraph spacing
+  formattedContent = formattedContent.replace(
+    /\n\n+/g,
+    '<div class="my-4"></div>'
+  );
+
+  // Convert remaining single newlines to proper line breaks with spacing
+  formattedContent = formattedContent.replace(/\n/g, '<br class="my-1" />');
 
   // If formatting fails, return plain text as fallback
   try {
     return (
       <div 
-        className="prose prose-sm max-w-none leading-relaxed break-words overflow-wrap-anywhere"
+        className="prose prose-sm max-w-none leading-relaxed break-words overflow-wrap-anywhere space-y-1"
         dangerouslySetInnerHTML={{ __html: formattedContent }} 
       />
     );
   } catch (error) {
     console.error('Error in formatMessageContent:', error);
     return (
-      <div className="prose prose-sm max-w-none leading-relaxed break-words overflow-wrap-anywhere">
+      <div className="prose prose-sm max-w-none leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap space-y-2 p-4 bg-gray-50 rounded-lg">
         {content}
       </div>
     );

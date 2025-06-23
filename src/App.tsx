@@ -255,10 +255,7 @@ function App() {
                       <BarChart2 className="h-4 w-4" />
                       View All Charts
                     </PremiumButton>
-                    <PremiumButton onClick={() => setShowFilters(prev => !prev)}>
-                      <Settings className="h-4 w-4" />
-                      Customize View
-                    </PremiumButton>
+                 
                     <PremiumButton 
                       onClick={() => handleDownloadAnalyticsReport('html')} 
                       className={`${isDownloadingReport ? 'opacity-50 cursor-not-allowed' : ''}`}
