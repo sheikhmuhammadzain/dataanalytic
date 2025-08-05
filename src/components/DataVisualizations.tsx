@@ -1,8 +1,10 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useDataStore } from '../store/dataStore';
 import Plot from 'react-plotly.js';
 import { extent, mean, median, quantile, deviation } from 'd3-array';
 import { Config, Layout } from 'plotly.js';
+import { detectManufacturingColumns, calculateBatchEfficiency,
+  getTopIngredients, groupByWipType, formatJulianDate } from '../lib/manufacturingUtils';
 
 const COLORS = [
   '#6366f1', // indigo-500

@@ -192,49 +192,76 @@ const InsightCard: React.FC<InsightCardProps> = ({
 
 export const DataSummary: React.FC = () => {
   const processedData = useDataStore(state => state.processedData);
+  // Manufacturing data overview - only show if we don't have WIP data
+  if (!processedData?.rows || !processedData?.headers) return null;
+  
+  // Check if this is manufacturing data
+  const hasWipData = processedData.headers.some(h => h.toLowerCase().includes('wip_')) ||
+                    processedData.headers.some(h => h.toLowerCase().includes('batch')) ||
+                    processedData.rows.some(row => row.WIP_TYPE);
+  
+  // If it's manufacturing data, don't show the Sales Overview section
+  if (hasWipData) {
+    return (
+      <div className="">
+        
+      </div>
+    );
+  }
+
   const [selectedProvince, setSelectedProvince] = useState('Punjab');
 
 
-  // Calculate business insights from the data
+  // Calculate manufacturing insights from WIP data
   const businessInsights = useMemo(() => {
     if (!processedData?.rows || !processedData?.headers) return null;
 
     const data = processedData.rows;
     const headers = processedData.headers;
     
-    // Find revenue/sales columns dynamically - prioritize sales_amount
-    let revenueColumn = null;
+    // Check if this is manufacturing data
+    const hasWipData = headers.some(h => h.toLowerCase().includes('wip_')) ||
+                      headers.some(h => h.toLowerCase().includes('batch')) ||
+                      data.some(row => row.WIP_TYPE);
     
-    // PRIORITY 1: Exact match for sales_amount (highest priority)
-    const salesAmountColumn = headers.find(h => h.toLowerCase() === 'sales_amount');
-    if (salesAmountColumn) {
-      revenueColumn = salesAmountColumn;
-      console.log('✅ Using exact match for sales_amount:', salesAmountColumn);
-    } else {
-      // PRIORITY 2: Other revenue columns only if sales_amount not found
-      revenueColumn = headers.find(h => {
-        const lower = h.toLowerCase().replace(/[_\s]/g, '');
-        const isMatch = (
-          lower === 'salesamount' ||
-          lower.includes('revenue') || 
-          lower.includes('sales') || 
-          lower.includes('amount') ||
-          lower.includes('total') ||
-          lower.includes('price') ||
-          lower.includes('value') ||
-          lower.includes('income') ||
-          lower.includes('earning') ||
-          lower.includes('turnover') ||
-          lower.includes('proceeds')
-        );
-        
-        if (isMatch) {
-          console.log(`📝 Using fallback revenue column: "${h}" (normalized: "${lower}")`);
-        }
-        
-        return isMatch;
-      });
+    if (!hasWipData) {
+      // Fallback to original sales logic if not manufacturing data
+      return null;
     }
+    
+    // Manufacturing WIP Data Analysis
+    // Find WIP value and quantity columns
+    const wipValueColumn = headers.find(h => 
+      h.toLowerCase().includes('wip_value') || 
+      h.toLowerCase().includes('value')
+    );
+    
+    const wipQtyColumn = headers.find(h => 
+      h.toLowerCase().includes('wip_qty') || 
+      h.toLowerCase().includes('quantity')
+    );
+    
+    const wipBatchColumn = headers.find(h => 
+      h.toLowerCase().includes('wip_batch_no') || 
+      h.toLowerCase().includes('batch_no')
+    );
+    
+    // For manufacturing data, use WIP_VALUE as the revenue equivalent
+    const revenueColumn = wipValueColumn;
+    
+    // Separate product and ingredient data
+    const productRows = data.filter(row => row.WIP_TYPE === 'Product');
+    const ingredientRows = data.filter(row => row.WIP_TYPE === 'Ingredient');
+    
+    console.log('🏭 Manufacturing Data Analysis:', {
+      totalRows: data.length,
+      productRows: productRows.length,
+      ingredientRows: ingredientRows.length,
+      wipValueColumn,
+      wipQtyColumn,
+      wipBatchColumn,
+      revenueColumn
+    });
     
     // Debug all revenue-related columns found
     const allRevenueColumns = headers.filter(h => {

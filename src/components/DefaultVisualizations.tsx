@@ -5,6 +5,7 @@ import { ChartLineLabelCustom } from './charts/ChartLineLabelCustom';
 import { ChartPieLabelList } from './charts/ChartPieLabelList';
 import { ChartRadialLabel } from './charts/ChartRadialLabel';
 import { ChartTooltipAdvanced } from './charts/ChartTooltipAdvanced';
+import { ChartManufacturingBatch } from './charts/ChartManufacturingBatch';
 
 interface DefaultVisualizationsProps {
   showFilters: boolean;
@@ -39,6 +40,10 @@ export const DefaultVisualizations: React.FC<DefaultVisualizationsProps> = ({ sh
       
       <div className="w-full">
         <ChartTooltipAdvanced />
+      </div>
+      
+      <div className="w-full">
+        <ChartManufacturingBatch />
       </div>
     </div>
   );

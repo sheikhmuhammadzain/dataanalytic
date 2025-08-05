@@ -3,6 +3,7 @@ import { FileUpload } from './components/FileUpload';
 import { DataSummary } from './components/DataSummary';
 import { DefaultVisualizations } from './components/DefaultVisualizations';
 import { DataTable } from './components/DataTable';
+import { ProductionDashboard } from './components/production/ProductionDashboard';
 import { DataChat } from './components/DataChat';
 import { useDataStore } from './store/dataStore';
 import { BarChart2, Table2, Sparkles, ArrowRight, Download, Share2, FileText, Settings, HelpCircle, Calculator, FileDown, Filter, CheckCircle, X } from 'lucide-react';
@@ -14,6 +15,7 @@ import { Sidebar } from './components/ui/sidebar';
 import { saveAs } from 'file-saver';
 
 import { downloadAnalyticsReport, downloadAnalyticsReportHTML } from './services/reportGenerator';
+import { detectManufacturingColumns } from './lib/manufacturingUtils';
 
 interface PremiumButtonProps {
   children: ReactNode;
@@ -196,6 +198,11 @@ function App() {
     );
   }
 
+  // Check if we have manufacturing data
+  const isManufacturingData = processedData && 
+    detectManufacturingColumns(processedData.headers).hasWipBatchNo && 
+    detectManufacturingColumns(processedData.headers).hasWipValue;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Session Restoration Notification */}
@@ -286,7 +293,11 @@ function App() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <DefaultVisualizations showFilters={showFilters} />
+                  {isManufacturingData ? (
+                    <ProductionDashboard />
+                  ) : (
+                    <DefaultVisualizations showFilters={showFilters} />
+                  )}
                 </motion.div>
               </CardContent>
             </Card>
