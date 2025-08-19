@@ -1,12 +1,11 @@
 import React, { ReactNode, useState, useEffect } from 'react';
-import { FileUpload } from './components/FileUpload';
 import { DataSummary } from './components/DataSummary';
 import { DefaultVisualizations } from './components/DefaultVisualizations';
-import { DataTable } from './components/DataTable';
 import { ProductionDashboard } from './components/production/ProductionDashboard';
 import { DataChat } from './components/DataChat';
+import { ManufacturingAnalyticsDashboard } from './components/ManufacturingAnalyticsDashboard';
 import { useDataStore } from './store/dataStore';
-import { BarChart2, Table2, Sparkles, ArrowRight, Download, Share2, FileText, Settings, HelpCircle, Calculator, FileDown, Filter, CheckCircle, X } from 'lucide-react';
+import { BarChart2, Sparkles, ArrowRight, Download, FileDown, CheckCircle, X, Factory } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { AdminPanel } from './components/AdminPanel';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -91,11 +90,12 @@ function App() {
     loadCSVSession,
     uploadedFiles
   } = useDataStore();
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters] = useState(false);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [showSessionNotification, setShowSessionNotification] = useState(false);
+  const [showManufacturingAnalytics, setShowManufacturingAnalytics] = useState(false);
 
   // Load CSV session on app initialization
   useEffect(() => {
@@ -115,7 +115,7 @@ function App() {
     }
   }, [isAuthenticated, loadCSVSession, isInitialized]);
 
-  const getThemeClass = (darkClass: string, lightClass: string) => {
+  const getThemeClass = (_darkClass: string, lightClass: string) => {
     return lightClass;
   };
 
@@ -181,6 +181,9 @@ function App() {
     return <AdminPanel theme="light" getThemeClass={getThemeClass} />;
   }
 
+  // Show manufacturing analytics dashboard if requested
+  // Removed full page replacement - will show in main content area instead
+
   // Show landing page if no data and initialization is complete
   if (!processedData && isInitialized) {
     return <LandingPage />;
@@ -219,6 +222,7 @@ function App() {
         onDownloadCSV={handleDownloadCSV}
         onDownloadReport={handleDownloadAnalyticsReport}
         onShowAdminPanel={() => setShowAdminPanel(true)}
+        onNavigateToAnalytics={() => setShowManufacturingAnalytics(true)}
         isDownloadingReport={isDownloadingReport}
         onCollapseChange={setIsSidebarCollapsed}
       />
@@ -243,68 +247,89 @@ function App() {
         </div>
 
         <main className="px-4 md:px-6 py-8 space-y-8">
-          {/* Analytics Dashboard */}
-          <div id="analytics-dashboard" className="space-y-8">
-            <Card className="relative border-gray-200 bg-white shadow-sm">
-              <CardHeader>
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xl md:text-2xl flex items-center gap-2 text-gray-900">
-                      Analytics Dashboard
-                      <Sparkles className="h-5 w-5 text-blue-600" />
-                    </CardTitle>
-                    <CardDescription>
-                      Comprehensive analysis and visualization of your data
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <PremiumButton onClick={() => handleScroll('analytics-dashboard')}>
-                      <BarChart2 className="h-4 w-4" />
-                      View All Charts
-                    </PremiumButton>
-                 
-                    <PremiumButton 
-                      onClick={() => handleDownloadAnalyticsReport('html')} 
-                      className={`${isDownloadingReport ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {isDownloadingReport ? (
-                        <>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          >
-                            <Download className="h-4 w-4" />
-                          </motion.div>
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <FileDown className="h-4 w-4" />
-                          Insights Report
-                        </>
-                      )}
-                    </PremiumButton>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
+          {showManufacturingAnalytics ? (
+            /* Manufacturing Analytics Dashboard */
+            <div className="relative">
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowManufacturingAnalytics(false)}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  {isManufacturingData ? (
-                    <ProductionDashboard />
-                  ) : (
-                    <DefaultVisualizations showFilters={showFilters} />
-                  )}
-                </motion.div>
-              </CardContent>
-            </Card>
+                  <ArrowRight className="w-4 h-4 rotate-180" />
+                  Back to Dashboard
+                </button>
+              </div>
+              <ManufacturingAnalyticsDashboard />
+            </div>
+          ) : (
+            /* Regular Analytics Dashboard */
+            <div id="analytics-dashboard" className="space-y-8">
+              <Card className="relative border-gray-200 bg-white shadow-sm">
+                <CardHeader>
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="space-y-1">
+                      <CardTitle className="text-xl md:text-2xl flex items-center gap-2 text-gray-900">
+                        Analytics Dashboard
+                        <Sparkles className="h-5 w-5 text-blue-600" />
+                      </CardTitle>
+                      <CardDescription>
+                        Comprehensive analysis and visualization of your data
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <PremiumButton onClick={() => handleScroll('analytics-dashboard')}>
+                        <BarChart2 className="h-4 w-4" />
+                        View All Charts
+                      </PremiumButton>
+                      
+                      <PremiumButton onClick={() => setShowManufacturingAnalytics(true)} className="bg-blue-600 text-white hover:bg-blue-700">
+                        <Factory className="h-4 w-4" />
+                        Manufacturing Analytics
+                      </PremiumButton>
+                   
+                      <PremiumButton 
+                        onClick={() => handleDownloadAnalyticsReport('html')} 
+                        className={`${isDownloadingReport ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {isDownloadingReport ? (
+                          <>
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                              <Download className="h-4 w-4" />
+                            </motion.div>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <FileDown className="h-4 w-4" />
+                            Insights Report
+                          </>
+                        )}
+                      </PremiumButton>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {isManufacturingData ? (
+                      <ProductionDashboard />
+                    ) : (
+                      <DefaultVisualizations showFilters={showFilters} />
+                    )}
+                  </motion.div>
+                </CardContent>
+              </Card>
 
-            {/* Data Preview Section */}
-        
-          </div>
+              {/* Data Preview Section */}
+          
+            </div>
+          )}
         </main>
       </div>
 

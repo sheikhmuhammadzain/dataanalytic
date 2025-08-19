@@ -14,7 +14,8 @@ import {
   Menu as MenuIcon,
   X,
   CheckCircle,
-  Database
+  Database,
+  Factory
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDataStore } from '../../store/dataStore';
@@ -24,6 +25,7 @@ interface SidebarProps {
   onDownloadCSV: () => void;
   onDownloadReport: (format: 'txt' | 'html') => void;
   onShowAdminPanel: () => void;
+  onNavigateToAnalytics?: () => void;
   isDownloadingReport: boolean;
   onCollapseChange?: (isCollapsed: boolean) => void;
 }
@@ -177,6 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDownloadCSV,
   onDownloadReport,
   onShowAdminPanel,
+  onNavigateToAnalytics,
   isDownloadingReport,
   onCollapseChange
 }) => {
@@ -276,6 +279,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <Table2 className="w-5 h-5 text-gray-600 group-hover:text-gray-900 mx-auto" />
             </button>
+            {onNavigateToAnalytics && (
+              <button
+                onClick={() => handleItemClick(onNavigateToAnalytics)}
+                className="w-full p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+                title="Manufacturing Analytics"
+              >
+                <Factory className="w-5 h-5 text-gray-600 group-hover:text-gray-900 mx-auto" />
+              </button>
+            )}
             <button
               onClick={() => handleItemClick(onDownloadCSV)}
               className="w-full p-2 hover:bg-gray-100 rounded-lg transition-colors group"
@@ -316,6 +328,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => handleItemClick(() => onScrollTo('data-preview'))}
                 isMobile={isMobile}
               />
+              {onNavigateToAnalytics && (
+                <SidebarItem
+                  icon={Factory}
+                  label="Manufacturing Analytics"
+                  onClick={() => handleItemClick(onNavigateToAnalytics)}
+                  isMobile={isMobile}
+                />
+              )}
             </div>
 
             <div className="space-y-1 pt-4">
