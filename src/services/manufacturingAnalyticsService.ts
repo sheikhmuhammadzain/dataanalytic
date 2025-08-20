@@ -1,9 +1,3 @@
-interface ApiResponse<T = any> {
-  success: boolean;
-  data: T;
-  error?: string;
-}
-
 interface BatchThroughputData {
   WIP_PERIOD_NAME: string;
   batches_completed: number;
@@ -25,6 +19,7 @@ interface BottleneckBatchData {
 
 interface DelaysData {
   WIP_PERIOD_NAME: string;
+  total_batches: number;
   delayed_batches: number;
 }
 
@@ -51,14 +46,18 @@ interface DelayReasonData {
 
 interface CostOverrunData {
   WIP_PERIOD_NAME: string;
+  WIP_BATCH_STATUS?: string;
   overrun_count: number;
   total_batches: number;
+  cost_overrun_batches?: number;
 }
 
 interface CostVarianceData {
-  WIP_PERIOD_NAME: string;
+  WIP_PERIOD_NAME?: string;
   PRODUCT_TYPE: string;
   total_cost_variance: number;
+  total_standard_cost?: number;
+  total_actual_cost?: number;
 }
 
 interface CostEfficiencyData {
@@ -74,7 +73,9 @@ interface OverallCostData {
 
 interface ForecastAccuracyData {
   WIP_PERIOD_NAME: string;
-  mape: number;
+  WIP_BATCH_STATUS: string;
+  avg_forecast_accuracy?: number;
+  mape?: number;
 }
 
 interface VarianceHotspotData {
@@ -122,8 +123,13 @@ interface CorrelationData {
 class ManufacturingAnalyticsService {
   private baseURL: string;
 
-  constructor(baseURL: string = 'http://localhost:8000') {
-    this.baseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+  constructor(baseURL?: string) {
+    // Use proxy in development, direct API in production
+    const defaultURL = import.meta.env.DEV 
+      ? '/api' 
+      : 'https://data-analysis-dashboard-rho.vercel.app';
+    
+    this.baseURL = baseURL ? (baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL) : defaultURL;
   }
 
   setBaseURL(url: string) {
@@ -131,19 +137,79 @@ class ManufacturingAnalyticsService {
   }
 
   private async fetchData<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${this.baseURL}${endpoint}`);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: Failed to fetch ${endpoint}`);
+    const url = `${this.baseURL}${endpoint}`;
+    
+    try {
+      console.log(`Fetching: ${url}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - Failed to fetch ${endpoint}`);
+      }
+      
+      const data = await response.json();
+      console.log(`Successfully fetched ${endpoint}:`, data);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching ${endpoint}:`, error);
+      
+      // If we're not using proxy and it's a CORS error, try with CORS proxy
+      if (!this.baseURL.includes('/api') && error instanceof TypeError && error.message.includes('fetch')) {
+        try {
+          console.log(`Trying CORS proxy for ${endpoint}`);
+          const { CORSProxyService } = await import('./corsProxy');
+          const response = await CORSProxyService.fetchWithProxy(url);
+          const data = await response.json();
+          console.log(`Successfully fetched ${endpoint} via proxy:`, data);
+          return data;
+        } catch (proxyError) {
+          console.error(`CORS proxy also failed for ${endpoint}:`, proxyError);
+        }
+      }
+      
+      throw new Error(`Failed to fetch ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    return await response.json();
   }
 
   // Test connection
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      await this.fetchData('/scrap-factor');
+      console.log('Testing connection to:', this.baseURL);
+      
+      // Try a simple endpoint first
+      const testUrl = `${this.baseURL}/scrap-factor`;
+      console.log('Testing URL:', testUrl);
+      
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Test connection successful, data received:', data);
+      
       return { success: true, message: 'Connection successful!' };
     } catch (error) {
+      console.error('Test connection failed:', error);
       return { 
         success: false, 
         message: error instanceof Error ? error.message : 'Connection failed' 
@@ -251,6 +317,10 @@ class ManufacturingAnalyticsService {
 
   async getThroughputScrapCorrelation(): Promise<{ throughput_scrap_correlation: number }> {
     return this.fetchData<{ throughput_scrap_correlation: number }>('/throughput-scrap-correlation');
+  }
+
+  async getCorrelationMatrix(): Promise<any> {
+    return this.fetchData<any>('/correlation-matrix');
   }
 
   // Load all data for a specific section

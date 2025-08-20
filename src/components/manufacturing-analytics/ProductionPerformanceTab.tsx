@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { ChartContainer, ChartConfig } from '../ui/chart';
-import { Line, LineChart, Bar, BarChart, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip, Pie, PieChart, Cell } from 'recharts';
-import { manufacturingAnalyticsService } from '../../services/manufacturingAnalyticsService';
+import { Line, LineChart, Bar, BarChart, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { useManufacturingDataStore } from '../../store/manufacturingDataStore';
 import type {
   BatchThroughputData,
   AverageBatchDurationData,
@@ -24,60 +24,52 @@ interface ProductionMetrics {
   avgThroughput: number;
   avgDuration: number;
   bottleneckCount: number;
+  totalDelayedBatches: number;
+  delayRate: number;
 }
 
 export const ProductionPerformanceTab: React.FC = () => {
-  const [throughputData, setThroughputData] = useState<BatchThroughputData[]>([]);
-  const [durationData, setDurationData] = useState<AverageBatchDurationData[]>([]);
-  const [bottleneckData, setBottleneckData] = useState<BottleneckBatchData[]>([]);
-  const [delaysData, setDelaysData] = useState<DelaysData[]>([]);
   const [metrics, setMetrics] = useState<ProductionMetrics>({
     totalBatches: 0,
     avgThroughput: 0,
     avgDuration: 0,
-    bottleneckCount: 0
+    bottleneckCount: 0,
+    totalDelayedBatches: 0,
+    delayRate: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Get data from central store
+  const {
+    batchThroughputData: throughputData,
+    averageBatchDurationData: durationData,
+    bottleneckBatchData: bottleneckData,
+    delaysData,
+    isLoading: loading,
+    hasData
+  } = useManufacturingDataStore();
 
   useEffect(() => {
-    loadProductionData();
-  }, []);
-
-  const loadProductionData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [throughput, duration, bottlenecks, delays] = await Promise.all([
-        manufacturingAnalyticsService.getBatchThroughputTrend(),
-        manufacturingAnalyticsService.getAverageBatchDuration(),
-        manufacturingAnalyticsService.getBottleneckBatches(10),
-        manufacturingAnalyticsService.getDelays()
-      ]);
-
-      setThroughputData(throughput);
-      setDurationData(duration);
-      setBottleneckData(bottlenecks);
-      setDelaysData(delays);
-
-      // Calculate metrics
-      const totalBatches = throughput.reduce((sum, item) => sum + (item.batches_completed || 0), 0);
-      const avgThroughput = throughput.length > 0 ? totalBatches / throughput.length : 0;
-      const avgDuration = duration.reduce((sum, item) => sum + (item.avg_duration_hours || 0), 0) / (duration.length || 1);
+    if (hasData) {
+      // Calculate metrics when data is available
+      const totalBatches = throughputData.reduce((sum, item) => sum + (item.batches_completed || 0), 0);
+      const avgThroughput = throughputData.length > 0 ? totalBatches / throughputData.length : 0;
+      const avgDuration = durationData.reduce((sum, item) => sum + (item.avg_duration_hours || 0), 0) / (durationData.length || 1);
+      
+      // Calculate delays metrics
+      const totalDelayedBatches = delaysData.reduce((sum, item) => sum + (item.delayed_batches || 0), 0);
+      const totalProcessedBatches = delaysData.reduce((sum, item) => sum + (item.total_batches || 0), 0);
+      const delayRate = totalProcessedBatches > 0 ? (totalDelayedBatches / totalProcessedBatches) * 100 : 0;
 
       setMetrics({
         totalBatches,
         avgThroughput,
         avgDuration,
-        bottleneckCount: bottlenecks.length
+        bottleneckCount: bottleneckData.length,
+        totalDelayedBatches,
+        delayRate
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load production data');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [hasData, throughputData, durationData, bottleneckData, delaysData]);
 
   const throughputChartConfig: ChartConfig = {
     batches_completed: {
@@ -93,9 +85,9 @@ export const ProductionPerformanceTab: React.FC = () => {
     }
   };
 
-  const COLORS = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'];
 
-  if (loading) {
+
+  if (loading || !hasData) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
@@ -107,25 +99,6 @@ export const ProductionPerformanceTab: React.FC = () => {
           </Card>
         ))}
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="border-red-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertTriangle className="w-5 h-5" />
-            <span>Error loading production data: {error}</span>
-          </div>
-          <button
-            onClick={loadProductionData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </CardContent>
-      </Card>
     );
   }
 
@@ -191,12 +164,14 @@ export const ProductionPerformanceTab: React.FC = () => {
         >
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bottlenecks</CardTitle>
+              <CardTitle className="text-sm font-medium">Delayed Batches</CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics.bottleneckCount}</div>
-              <p className="text-xs text-muted-foreground">Identified bottleneck batches</p>
+              <div className="text-2xl font-bold">{metrics.totalDelayedBatches.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                Delay rate: {metrics.delayRate.toFixed(2)}%
+              </p>
             </CardContent>
           </Card>
         </motion.div>
@@ -312,32 +287,44 @@ export const ProductionPerformanceTab: React.FC = () => {
                 Delays Analysis
               </CardTitle>
               <CardDescription>
-                Distribution of delayed batches by period
+                Total vs delayed batches by period
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer config={{}} className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={delaysData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="delayed_batches"
-                      label={({ WIP_PERIOD_NAME, delayed_batches, percent }) => 
-                        `${WIP_PERIOD_NAME}: ${delayed_batches} (${(percent! * 100).toFixed(0)}%)`
-                      }
-                    >
-                      {delaysData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => [`${value} batches`, 'Delayed Batches']}
+                  <BarChart data={delaysData.slice(0, 15)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="WIP_PERIOD_NAME" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={0}
+                      fontSize={10}
                     />
-                  </PieChart>
+                    <YAxis />
+                    <Tooltip
+                      formatter={(value, name) => [
+                        `${value} batches`, 
+                        name === 'total_batches' ? 'Total Batches' : 'Delayed Batches'
+                      ]}
+                      labelFormatter={(label) => `Period: ${label}`}
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="total_batches" 
+                      fill="hsl(200, 80%, 50%)"
+                      radius={[4, 4, 0, 0]}
+                      name="Total Batches"
+                    />
+                    <Bar 
+                      dataKey="delayed_batches" 
+                      fill="hsl(0, 70%, 50%)"
+                      radius={[4, 4, 0, 0]}
+                      name="Delayed Batches"
+                    />
+                  </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
             </CardContent>

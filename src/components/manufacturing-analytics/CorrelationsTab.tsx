@@ -9,7 +9,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { manufacturingAnalyticsService } from '../../services/manufacturingAnalyticsService';
+import { useManufacturingDataStore } from '../../store/manufacturingDataStore';
 import type { CorrelationData } from '../../services/manufacturingAnalyticsService';
 
 interface CorrelationMetrics {
@@ -28,19 +28,36 @@ interface CorrelationResult {
 }
 
 export const CorrelationsTab: React.FC = () => {
-  const [correlations, setCorrelations] = useState<CorrelationResult[]>([]);
   const [metrics, setMetrics] = useState<CorrelationMetrics>({
     strongCorrelations: 0,
     moderateCorrelations: 0,
     weakCorrelations: 0,
     avgCorrelationStrength: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Get data from central store
+  const {
+    correlationsData: correlations,
+    isLoading: loading,
+    hasData
+  } = useManufacturingDataStore();
 
   useEffect(() => {
-    loadCorrelationData();
-  }, []);
+    if (hasData && correlations.length > 0) {
+      // Calculate metrics when data is available
+      const strongCount = correlations.filter(c => Math.abs(c.value) >= 0.6).length;
+      const moderateCount = correlations.filter(c => Math.abs(c.value) >= 0.3 && Math.abs(c.value) < 0.6).length;
+      const weakCount = correlations.filter(c => Math.abs(c.value) < 0.3).length;
+      const avgStrength = correlations.reduce((sum, c) => sum + Math.abs(c.value), 0) / correlations.length;
+
+      setMetrics({
+        strongCorrelations: strongCount,
+        moderateCorrelations: moderateCount,
+        weakCorrelations: weakCount,
+        avgCorrelationStrength: avgStrength
+      });
+    }
+  }, [hasData, correlations]);
 
   const loadCorrelationData = async () => {
     setLoading(true);
@@ -155,7 +172,7 @@ export const CorrelationsTab: React.FC = () => {
     return value > 0 ? 'Positive' : 'Negative';
   };
 
-  if (loading) {
+  if (loading || !hasData) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
@@ -170,24 +187,14 @@ export const CorrelationsTab: React.FC = () => {
     );
   }
 
-  if (error) {
-    return (
-      <Card className="border-red-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertTriangle className="w-5 h-5" />
-            <span>Error loading correlation data: {error}</span>
-          </div>
-          <button
-            onClick={loadCorrelationData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Map correlations data to display format
+  const correlationResults: CorrelationResult[] = correlations.map((corr) => ({
+    title: corr.name,
+    value: corr.value,
+    description: `${corr.direction} ${corr.strength.toLowerCase()} correlation`,
+    icon: corr.value > 0 ? TrendingUp : TrendingDown,
+    color: corr.color
+  }));
 
   return (
     <div className="space-y-6">
@@ -264,7 +271,7 @@ export const CorrelationsTab: React.FC = () => {
 
       {/* Correlation Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {correlations.map((correlation, index) => {
+        {correlationResults.map((correlation, index) => {
           const Icon = correlation.icon;
           const strength = getCorrelationStrength(correlation.value);
           const direction = getCorrelationDirection(correlation.value);

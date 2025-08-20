@@ -46,11 +46,7 @@ export const PlanningAccuracyTab: React.FC = () => {
   useEffect(() => {
     if (hasData) {
       // Calculate metrics when data is available
-      const avgMAPE = forecastData.reduce((sum, item) => {
-        const mape = item.mape || item.avg_forecast_accuracy || 0;
-        return sum + mape;
-      }, 0) / (forecastData.length || 1);
-      
+      const avgMAPE = forecastData.reduce((sum, item) => sum + (item.mape || 0), 0) / (forecastData.length || 1);
       const totalVariance = hotspotData.reduce((sum, item) => sum + Math.abs(item.total_qty_variance || 0), 0);
       const hotspotCount = hotspotData.length;
       const avgReplacementCost = replacementData.reduce((sum, item) => sum + (item.avg_extra_cost || 0), 0) / (replacementData.length || 1);
@@ -85,12 +81,6 @@ export const PlanningAccuracyTab: React.FC = () => {
       color: 'hsl(270, 60%, 50%)'
     }
   };
-
-  // Normalize forecast data to handle both backend formats
-  const normalizedForecastData = forecastData.map(item => ({
-    ...item,
-    mape: item.mape || item.avg_forecast_accuracy || 0
-  }));
 
   if (loading || !hasData) {
     return (
@@ -219,7 +209,7 @@ export const PlanningAccuracyTab: React.FC = () => {
             <CardContent>
               <ChartContainer config={forecastChartConfig} className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={normalizedForecastData}>
+                  <LineChart data={forecastData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="WIP_PERIOD_NAME" 

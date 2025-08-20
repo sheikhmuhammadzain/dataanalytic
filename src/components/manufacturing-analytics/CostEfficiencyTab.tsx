@@ -10,7 +10,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { ChartContainer, ChartConfig } from '../ui/chart';
 import { Line, LineChart, Bar, BarChart, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip } from 'recharts';
-import { manufacturingAnalyticsService } from '../../services/manufacturingAnalyticsService';
+import { useManufacturingDataStore } from '../../store/manufacturingDataStore';
 import type {
   CostOverrunData,
   CostVarianceData,
@@ -26,46 +26,32 @@ interface CostMetrics {
 }
 
 export const CostEfficiencyTab: React.FC = () => {
-  const [costOverrunData, setCostOverrunData] = useState<CostOverrunData[]>([]);
-  const [costVarianceData, setCostVarianceData] = useState<CostVarianceData[]>([]);
-  const [costEfficiencyData, setCostEfficiencyData] = useState<CostEfficiencyData[]>([]);
-  const [overallCostData, setOverallCostData] = useState<OverallCostData[]>([]);
   const [metrics, setMetrics] = useState<CostMetrics>({
     totalOverruns: 0,
     overrunPercentage: 0,
     avgEfficiencyIndex: 0,
     totalCostVariance: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Get data from central store
+  const {
+    costOverrunData,
+    costVarianceByProductData: costVarianceData,
+    costEfficiencyIndexData: costEfficiencyData,
+    costVarianceData: overallCostData,
+    isLoading: loading,
+    hasData
+  } = useManufacturingDataStore();
 
   useEffect(() => {
-    loadCostData();
-  }, []);
-
-  const loadCostData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [costOverruns, costVarianceByProduct, costEfficiency, overallCosts] = await Promise.all([
-        manufacturingAnalyticsService.getCostOverrunFrequency(),
-        manufacturingAnalyticsService.getCostVarianceByProduct(),
-        manufacturingAnalyticsService.getCostEfficiencyIndex(),
-        manufacturingAnalyticsService.getCostVariance()
-      ]);
-
-      setCostOverrunData(costOverruns);
-      setCostVarianceData(costVarianceByProduct);
-      setCostEfficiencyData(costEfficiency);
-      setOverallCostData(overallCosts);
-
-      // Calculate metrics
-      const totalOverruns = costOverruns.reduce((sum, item) => sum + (item.overrun_count || 0), 0);
-      const totalBatches = costOverruns.reduce((sum, item) => sum + (item.total_batches || 0), 0);
+    if (hasData) {
+      // Calculate metrics when data is available
+      const totalOverruns = costOverrunData.reduce((sum, item) => 
+        sum + (item.overrun_count || item.cost_overrun_batches || 0), 0);
+      const totalBatches = costOverrunData.reduce((sum, item) => sum + (item.total_batches || 0), 0);
       const overrunPercentage = totalBatches > 0 ? (totalOverruns / totalBatches) * 100 : 0;
-      const avgEfficiencyIndex = costEfficiency.reduce((sum, item) => sum + (item.avg_cost_efficiency_index || 0), 0) / (costEfficiency.length || 1);
-      const totalCostVariance = costVarianceByProduct.reduce((sum, item) => sum + Math.abs(item.total_cost_variance || 0), 0);
+      const avgEfficiencyIndex = costEfficiencyData.reduce((sum, item) => sum + (item.avg_cost_efficiency_index || 0), 0) / (costEfficiencyData.length || 1);
+      const totalCostVariance = costVarianceData.reduce((sum, item) => sum + Math.abs(item.total_cost_variance || 0), 0);
 
       setMetrics({
         totalOverruns,
@@ -73,12 +59,8 @@ export const CostEfficiencyTab: React.FC = () => {
         avgEfficiencyIndex,
         totalCostVariance
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load cost data');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [hasData, costOverrunData, costVarianceData, costEfficiencyData]);
 
   const overrunChartConfig: ChartConfig = {
     overrun_count: {
@@ -109,7 +91,13 @@ export const CostEfficiencyTab: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Normalize data to handle different backend formats
+  const normalizedOverrunData = costOverrunData.map(item => ({
+    ...item,
+    overrun_count: item.overrun_count || item.cost_overrun_batches || 0
+  }));
+
+  if (loading || !hasData) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
@@ -121,25 +109,6 @@ export const CostEfficiencyTab: React.FC = () => {
           </Card>
         ))}
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="border-red-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="w-5 h-5" />
-            <span>Error loading cost data: {error}</span>
-          </div>
-          <button
-            onClick={loadCostData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </CardContent>
-      </Card>
     );
   }
 
@@ -237,7 +206,7 @@ export const CostEfficiencyTab: React.FC = () => {
             <CardContent>
               <ChartContainer config={overrunChartConfig} className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={costOverrunData}>
+                  <BarChart data={normalizedOverrunData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="WIP_PERIOD_NAME" 

@@ -13,6 +13,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { manufacturingAnalyticsService } from '../services/manufacturingAnalyticsService';
+import { useManufacturingDataStore } from '../store/manufacturingDataStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { ProductionPerformanceTab } from './manufacturing-analytics/ProductionPerformanceTab';
 import { QualityWasteTab } from './manufacturing-analytics/QualityWasteTab';
@@ -76,17 +77,20 @@ const tabs: TabConfig[] = [
 
 export const ManufacturingAnalyticsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('production');
-  const [apiUrl, setApiUrl] = useState('http://localhost:8000');
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'connected' | 'failed'>('idle');
   const [connectionMessage, setConnectionMessage] = useState('');
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState<string>('');
+  
+  // Use the central data store
+  const { 
+    isLoading: isLoadingData, 
+    loadingProgress, 
+    hasData,
+    loadAllData
+  } = useManufacturingDataStore();
 
   const testConnection = async () => {
     setConnectionStatus('testing');
     setConnectionMessage('');
-    
-    manufacturingAnalyticsService.setBaseURL(apiUrl);
     
     try {
       const result = await manufacturingAnalyticsService.testConnection();
@@ -109,48 +113,23 @@ export const ManufacturingAnalyticsDashboard: React.FC = () => {
     testConnection();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !hasData && !isLoadingData) {
+      loadAllData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionStatus]);
 
-  const loadAllData = async () => {
+  const handleLoadAllData = async () => {
     if (connectionStatus !== 'connected') {
       setConnectionMessage('❌ Please establish connection first');
       return;
     }
 
-    setIsLoadingData(true);
-    setLoadingProgress('Loading production data...');
-    
-    try {
-      // Load data progressively with progress updates
-      const tasks = [
-        { name: 'Production Performance', fn: () => manufacturingAnalyticsService.loadProductionData() },
-        { name: 'Quality & Waste', fn: () => manufacturingAnalyticsService.loadQualityData() },
-        { name: 'Cost & Efficiency', fn: () => manufacturingAnalyticsService.loadCostData() },
-        { name: 'Planning Accuracy', fn: () => manufacturingAnalyticsService.loadPlanningData() },
-        { name: 'Correlations', fn: () => manufacturingAnalyticsService.loadCorrelationData() },
-        { name: 'Operations', fn: () => manufacturingAnalyticsService.loadOperationsData() }
-      ];
-
-      for (let i = 0; i < tasks.length; i++) {
-        const task = tasks[i];
-        setLoadingProgress(`Loading ${task.name}... (${i + 1}/${tasks.length})`);
-        await task.fn();
-        
-        // Small delay to show progress
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
+    await loadAllData();
+    if (hasData) {
       setConnectionMessage('✅ All data loaded successfully!');
-      setLoadingProgress('Complete!');
-      
-      setTimeout(() => {
-        setLoadingProgress('');
-      }, 2000);
-      
-    } catch (error) {
-      setConnectionMessage(`❌ Error loading data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setLoadingProgress('');
-    } finally {
-      setIsLoadingData(false);
     }
   };
 
@@ -211,16 +190,12 @@ export const ManufacturingAnalyticsDashboard: React.FC = () => {
         </CardHeader>
         
         <CardContent className="space-y-4">
-          {/* API Configuration */}
+          {/* Connection Status */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="flex-1">
-              <input
-                type="text"
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
-                placeholder="API Base URL"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0052A5] focus:border-transparent"
-              />
+              <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-600">
+                API: https://data-analysis-dashboard-rho.vercel.app
+              </div>
             </div>
             
             <div className="flex gap-2">
@@ -244,7 +219,7 @@ export const ManufacturingAnalyticsDashboard: React.FC = () => {
               </button>
               
               <button
-                onClick={loadAllData}
+                onClick={handleLoadAllData}
                 disabled={isLoadingData || connectionStatus !== 'connected'}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -256,7 +231,7 @@ export const ManufacturingAnalyticsDashboard: React.FC = () => {
                 ) : (
                   <>
                     <TrendingUp className="w-4 h-4" />
-                    Load All Data
+                    {hasData ? 'Refresh Data' : 'Load All Data'}
                   </>
                 )}
               </button>

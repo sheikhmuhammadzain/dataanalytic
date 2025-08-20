@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { ChartContainer } from '../ui/chart';
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { manufacturingAnalyticsService } from '../../services/manufacturingAnalyticsService';
+import { useManufacturingDataStore } from '../../store/manufacturingDataStore';
 import type {
   MaterialChangesData,
   ReplacementIdData
@@ -25,42 +25,31 @@ interface OperationsMetrics {
 }
 
 export const OperationsTab: React.FC = () => {
-  const [materialChangesData, setMaterialChangesData] = useState<MaterialChangesData[]>([]);
-  const [replacementData, setReplacementData] = useState<ReplacementIdData[]>([]);
   const [metrics, setMetrics] = useState<OperationsMetrics>({
     totalMaterialChanges: 0,
     totalReplacements: 0,
     avgChangeQty: 0,
     topReplacementReason: 'N/A'
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Get data from central store
+  const {
+    rawMaterialChangesData: materialChangesData,
+    replacementIdentificationData: replacementData,
+    isLoading: loading,
+    hasData
+  } = useManufacturingDataStore();
 
   useEffect(() => {
-    loadOperationsData();
-  }, []);
-
-  const loadOperationsData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [materialChanges, replacementIdentification] = await Promise.all([
-        manufacturingAnalyticsService.getRawMaterialChanges(),
-        manufacturingAnalyticsService.getReplacementIdentification()
-      ]);
-
-      setMaterialChangesData(materialChanges);
-      setReplacementData(replacementIdentification);
-
-      // Calculate metrics
-      const totalMaterialChanges = materialChanges.length;
-      const totalReplacements = replacementIdentification.reduce((sum, item) => sum + (item.count || 0), 0);
-      const avgChangeQty = materialChanges.length > 0 
-        ? materialChanges.reduce((sum, item) => sum + Math.abs(item.total_qty_change || 0), 0) / materialChanges.length 
+    if (hasData) {
+      // Calculate metrics when data is available
+      const totalMaterialChanges = materialChangesData.length;
+      const totalReplacements = replacementData.reduce((sum, item) => sum + (item.count || 0), 0);
+      const avgChangeQty = materialChangesData.length > 0 
+        ? materialChangesData.reduce((sum, item) => sum + Math.abs(item.total_qty_change || 0), 0) / materialChangesData.length 
         : 0;
-      const topReplacementReason = replacementIdentification.length > 0 
-        ? replacementIdentification.sort((a, b) => (b.count || 0) - (a.count || 0))[0].REASON 
+      const topReplacementReason = replacementData.length > 0 
+        ? replacementData.sort((a, b) => (b.count || 0) - (a.count || 0))[0].REASON 
         : 'N/A';
 
       setMetrics({
@@ -69,16 +58,12 @@ export const OperationsTab: React.FC = () => {
         avgChangeQty,
         topReplacementReason
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load operations data');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [hasData, materialChangesData, replacementData]);
 
   const COLORS = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#ffecd2', '#fcb69f', '#a8edea', '#fed6e3'];
 
-  if (loading) {
+  if (loading || !hasData) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
@@ -90,25 +75,6 @@ export const OperationsTab: React.FC = () => {
           </Card>
         ))}
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="border-red-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertTriangle className="w-5 h-5" />
-            <span>Error loading operations data: {error}</span>
-          </div>
-          <button
-            onClick={loadOperationsData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </CardContent>
-      </Card>
     );
   }
 
