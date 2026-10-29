@@ -1,0 +1,272 @@
+# Data Analytics Dashboard
+
+A modern data analytics dashboard built with React, Vite, and Google's Gemini AI. Upload CSV files and analyze your data with AI-powered insights.
+
+## Features
+
+- CSV file upload and parsing
+- Data visualization with charts
+- AI-powered data analysis chat
+- Column statistics and summaries
+- Interactive data filtering
+- Responsive design
+
+## Tech Stack
+
+- Frontend: React, TypeScript, Tailwind CSS
+- Development Server: Vite
+- AI: Google Generative AI (Gemini)
+- Charts: Recharts
+- State Management: Zustand
+- CSV Parsing: Papa Parse
+
+## Development
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file with your Gemini API key:
+   ```
+   VITE_GEMINI_API_KEY=your_api_key_here
+   ```
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   This will start the Vite development server with hot module replacement.
+
+5. For production build:
+   ```bash
+   npm run build
+   npm run preview
+   ```
+
+## Deployment to Netlify
+
+### Option 1: Deploy via Netlify UI
+
+1. Build the project locally:
+   ```bash
+   npm run build
+   ```
+
+2. Drag and drop the `dist` folder to Netlify's upload section.
+
+3. Add your environment variables in Netlify's UI:
+   - Key: `VITE_GEMINI_API_KEY`
+   - Value: Your Gemini API key
+
+### Option 2: Deploy via Git
+
+1. Push your code to a Git repository (GitHub, GitLab, etc.)
+
+2. In Netlify:
+   - Create a new site from Git
+   - Connect to your repository
+   - Set the build command to: `npm run build`
+   - Set the publish directory to: `dist`
+   - Add your environment variables:
+     - Key: `VITE_GEMINI_API_KEY`
+     - Value: Your Gemini API key
+
+3. Click "Deploy site"
+
+## Troubleshooting Deployment
+
+If you encounter MIME type errors:
+- The project includes a `netlify.toml` and `_headers` file that should handle MIME type configurations
+- If issues persist, check Netlify's documentation on handling MIME types for SPAs
+- Ensure the build command and publish directory are correctly set in Netlify
+
+## License
+
+MIT
+
+# CSV to Charts
+
+A modern, interactive data visualization tool that transforms CSV files into beautiful charts and provides AI-powered data analysis.
+
+## Features
+
+- 📊 **Interactive Visualizations**: Multiple chart types (bar, line, scatter, pie)
+- 🤖 **AI-Powered Chat**: Ask questions about your data and get intelligent insights
+- 📈 **Statistical Analysis**: Automatic statistical summaries and insights
+- 🔄 **Data Transformations**: Filter, sort, and manipulate your data
+- 📱 **Responsive Design**: Works beautifully on desktop and mobile
+- ⚡ **Fast Processing**: Optimized for large datasets
+
+## CSV Data Chat Integration
+
+### Best Practices Implemented
+
+#### 1. **Rich Context Preparation**
+The AI receives comprehensive dataset information:
+- Dataset overview (rows, columns, data types)
+- Statistical summaries for numerical columns
+- Sample data rows for context
+- Column classifications (numerical vs categorical)
+
+#### 2. **Smart Context Management**
+- **Increased context limit**: 4,000 characters (up from 500)
+- **Intelligent truncation**: Preserves beginning and end of context
+- **Sample data inclusion**: First 5 rows for concrete examples
+
+#### 3. **Enhanced Prompt Engineering**
+```typescript
+// Enhanced prompt structure for better data analysis
+const fullPrompt = `You are an expert data analyst. You have access to a CSV dataset with the following information:
+
+${processedContext}
+
+Instructions for analysis:
+- Answer questions about the data based on the provided dataset summary and statistics
+- Provide specific insights using the actual column names and values from the data
+- When discussing trends or patterns, reference the statistical information provided
+- If asked about data that isn't in the summary, explain what information is available
+- Use clear, concise language and provide actionable insights
+- Format responses with bullet points or numbered lists when appropriate
+
+User Question: ${prompt}
+
+Please analyze the data and provide a helpful response:`;
+```
+
+#### 4. **Dynamic Suggested Questions**
+The chat automatically generates relevant questions based on your data:
+- Key insights for your specific dataset size
+- Column-specific analysis suggestions
+- Pattern and outlier detection prompts
+
+#### 5. **User Experience Enhancements**
+- **Quick action buttons**: One-click common questions
+- **Streaming responses**: Real-time AI response display
+- **Error handling**: Clear error messages and fallbacks
+- **Context awareness**: AI knows your exact dataset structure
+
+### Implementation Details
+
+#### Data Context Structure
+```typescript
+const getDataContext = (): string => {
+  return `
+DATASET OVERVIEW:
+- Total Rows: ${summary.rowCount}
+- Total Columns: ${summary.columnCount}
+- File contains ${summary.numericalColumns.length} numerical and ${summary.categoricalColumns.length} categorical columns
+
+COLUMN INFORMATION:
+Numerical Columns: ${summary.numericalColumns.join(', ')}
+Categorical Columns: ${summary.categoricalColumns.join(', ')}
+
+STATISTICAL SUMMARY:
+${Object.entries(summary.columnStats).map(([col, stats]) => 
+  `- ${col}: ${formattedStats}`
+).join('\n')}
+
+SAMPLE DATA (First 5 rows):
+${sampleDataString}
+
+DATA INSIGHTS:
+- Dataset characteristics and analysis capabilities
+- Available analysis types based on column types
+`;
+};
+```
+
+#### Key Integration Points
+
+1. **Data Store Integration**: Chat accesses `processedData` from Zustand store
+2. **Real-time Updates**: Context updates when data changes
+3. **Type Safety**: Full TypeScript support for data structures
+4. **Error Boundaries**: Graceful handling of API failures
+
+### Usage Examples
+
+Users can ask questions like:
+- "What are the key insights from this dataset?"
+- "Analyze the trends in [column_name]"
+- "What's the distribution of [category_column]?"
+- "Compare [column1] and [column2]"
+- "Find patterns or outliers in the data"
+
+### Performance Optimizations
+
+- **Chunked Processing**: Large datasets processed in 10k row chunks
+- **Smart Sampling**: Statistical analysis on representative samples
+- **Lazy Loading**: Context generated only when chat is opened
+- **Debounced Updates**: Prevents excessive API calls
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+- Gemini API key (for AI chat functionality)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd csvtocharts
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Add your VITE_GEMINI_API_KEY to .env
+
+# Start development server
+npm run dev
+```
+
+### Environment Variables
+
+```env
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── DataChat.tsx          # AI chat component
+│   ├── DataTable.tsx         # Data display table
+│   ├── DataVisualizations.tsx # Chart components
+│   └── ...
+├── services/
+│   └── gemini.ts             # AI service integration
+├── store/
+│   └── dataStore.ts          # Zustand data management
+├── types/
+│   └── data.ts               # TypeScript definitions
+└── ...
+```
+
+## Technologies Used
+
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Charts**: Recharts, D3.js
+- **AI**: Google Gemini API
+- **State Management**: Zustand
+- **Animations**: Framer Motion
+- **Build Tool**: Vite
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+ 

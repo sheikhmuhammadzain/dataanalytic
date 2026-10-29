@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: data-analytics-dashboard
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: node server.js
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+    autoDeploy: true 

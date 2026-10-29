@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manufacturing Analytics Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .api-config {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .api-config input {
+            padding: 12px 18px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .api-config input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 8px;
+            margin-bottom: 30px;
+            gap: 5px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+        
+        .tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(31, 38, 135, 0.4);
+        }
+        
+        .metric-card h3 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .metric-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 15px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .data-table th {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+        
+        .data-table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #667eea;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online { background-color: #27ae60; }
+        .status-offline { background-color: #e74c3c; }
+        
+        .correlation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .correlation-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .correlation-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .correlation-strong { color: #27ae60; }
+        .correlation-moderate { color: #f39c12; }
+        .correlation-weak { color: #e74c3c; }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .api-config {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 Manufacturing Analytics Dashboard</h1>
+            <div class="api-config">
+                <input type="text" id="apiUrl" placeholder="API Base URL" value="http://localhost:8000">
+                <button class="btn" onclick="testConnection()">
+                    <span class="status-indicator" id="connectionStatus"></span>
+                    Test Connection
+                </button>
+                <button class="btn" onclick="loadAllData()" id="loadBtn">Load All Data</button>
+            </div>
+            <div id="connectionMessage"></div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('production')">📊 Production Performance</button>
+            <button class="tab" onclick="switchTab('quality')">🎯 Quality & Waste</button>
+            <button class="tab" onclick="switchTab('costs')">💰 Cost & Efficiency</button>
+            <button class="tab" onclick="switchTab('planning')">📋 Planning Accuracy</button>
+            <button class="tab" onclick="switchTab('correlations')">🔗 Correlations</button>
+            <button class="tab" onclick="switchTab('operations')">⚙️ Operations</button>
+        </div>
+        
+        <!-- Production Performance Tab -->
+        <div id="production" class="tab-content active">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3><span class="metric-icon">📈</span>Batch Throughput Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="throughputChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">⏱️</span>Average Batch Duration</h3>
+                    <div class="chart-container">
+                        <canvas id="durationChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">🚫</span>Bottleneck Batches</h3>
+                    <div id="bottleneckData" class="loading">Loading...</div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">⏰</span>Delays Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="delaysChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quality & Waste Tab -->
+        <div id="quality" class="tab-content">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3><span class="metric-icon">📉</span>Scrap Rate Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="scrapTrendChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">🏆</span>Top Scrap Contributors</h3>
+                    <div class="chart-container">
+                        <canvas id="scrapContributorsChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">📊</span>Scrap Factor Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="scrapFactorChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">❓</span>Delay Reasons</h3>
+                    <div id="delayReasonsData" class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cost & Efficiency Tab -->
+        <div id="costs" class="tab-content">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3><span class="metric-icon">💸</span>Cost Overrun Frequency</h3>
+                    <div class="chart-container">
+                        <canvas id="costOverrunChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">📊</span>Cost Variance by Product</h3>
+                    <div id="costVarianceData" class="loading">Loading...</div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">⚡</span>Cost Efficiency Index</h3>
+                    <div class="chart-container">
+                        <canvas id="efficiencyChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">💰</span>Overall Cost Variance</h3>
+                    <div class="chart-container">
+                        <canvas id="overallCostChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Planning Accuracy Tab -->
+        <div id="planning" class="tab-content">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3><span class="metric-icon">🎯</span>Forecast Accuracy</h3>
+                    <div class="chart-container">
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">🔥</span>Variance Hotspots</h3>
+                    <div id="hotspotData" class="loading">Loading...</div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">📈</span>Quantity Variance</h3>
+                    <div class="chart-container">
+                        <canvas id="quantityVarianceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">🔄</span>Replacement Cost Impact</h3>
+                    <div id="replacementData" class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Correlations Tab -->
+        <div id="correlations" class="tab-content">
+            <div class="metric-card">
+                <h3><span class="metric-icon">🔗</span>Key Performance Correlations</h3>
+                <div class="correlation-grid" id="correlationGrid">
+                    <!-- Correlation cards will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Operations Tab -->
+        <div id="operations" class="tab-content">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3><span class="metric-icon">🔄</span>Raw Material Changes</h3>
+                    <div id="materialChangesData" class="loading">Loading...</div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3><span class="metric-icon">🔧</span>Replacement Identification</h3>
+                    <div class="chart-container">
+                        <canvas id="replacementChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let apiBaseUrl = 'http://localhost:8000';
+        let charts = {};
+        
+        // API connection testing
+        async function testConnection() {
+            const url = document.getElementById('apiUrl').value.trim();
+            if (!url) return;
+            
+            apiBaseUrl = url;
+            const status = document.getElementById('connectionStatus');
+            const message = document.getElementById('connectionMessage');
+            
+            try {
+                const response = await fetch(`${apiBaseUrl}/scrap-factor`);
+                if (response.ok) {
+                    status.className = 'status-indicator status-online';
+                    message.innerHTML = '<div class="success">✅ Connection successful!</div>';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                status.className = 'status-indicator status-offline';
+                message.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+            }
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+        
+        // Generic API call function
+        async function fetchData(endpoint) {
+            try {
+                const response = await fetch(`${apiBaseUrl}${endpoint}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${endpoint}:`, error);
+                return [];
+            }
+        }
+        
+        // Load all data
+        async function loadAllData() {
+            const btn = document.getElementById('loadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>Loading...';
+            
+            try {
+                await Promise.all([
+                    loadProductionData(),
+                    loadQualityData(),
+                    loadCostData(),
+                    loadPlanningData(),
+                    loadCorrelationData(),
+                    loadOperationsData()
+                ]);
+                
+                btn.innerHTML = '✅ Data Loaded';
+                setTimeout(() => {
+                    btn.innerHTML = 'Load All Data';
+                    btn.disabled = false;
+                }, 2000);
+            } catch (error) {
+                btn.innerHTML = '❌ Error Loading';
+                setTimeout(() => {
+                    btn.innerHTML = 'Load All Data';
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }
+        
+        // Load Production Performance Data
+        async function loadProductionData() {
+            // Batch Throughput Trend
+            const throughputData = await fetchData('/batch-throughput-trend');
+            if (throughputData.length > 0) {
+                createChart('throughputChart', {
+                    type: 'line',
+                    data: {
+                        labels: throughputData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Batches Completed',
+                            data: throughputData.map(d => d.batches_completed || 0),
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            
+            // Average Batch Duration
+            const durationData = await fetchData('/average-batch-duration');
+            if (durationData.length > 0) {
+                createChart('durationChart', {
+                    type: 'bar',
+                    data: {
+                        labels: durationData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Avg Duration (Hours)',
+                            data: durationData.map(d => d.avg_duration_hours || 0),
+                            backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                            borderColor: '#764ba2',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            
+            // Bottleneck Batches
+            const bottleneckData = await fetchData('/bottleneck-batches?top_n=10');
+            displayTable('bottleneckData', bottleneckData, [
+                'WIP_PERIOD_NAME', 'WIP_LOT_NUMBER', 'PRODUCT_TYPE', 
+                'WIP_BATCH_STATUS', 'duration_hours', 'DELAY_REASON'
+            ]);
+            
+            // Delays Analysis
+            const delaysData = await fetchData('/delays');
+            if (delaysData.length > 0) {
+                createChart('delaysChart', {
+                    type: 'doughnut',
+                    data: {
+                        labels: delaysData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Delayed Batches',
+                            data: delaysData.map(d => d.delayed_batches || 0),
+                            backgroundColor: [
+                                '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                                '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
+        
+        // Load Quality & Waste Data
+        async function loadQualityData() {
+            // Scrap Rate Trend
+            const scrapTrendData = await fetchData('/scrap-rate-trend');
+            if (scrapTrendData.length > 0) {
+                createChart('scrapTrendChart', {
+                    type: 'line',
+                    data: {
+                        labels: scrapTrendData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Avg Scrap Rate',
+                            data: scrapTrendData.map(d => d.avg_scrap_rate || 0),
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            
+            // Top Scrap Contributors
+            const scrapContributorsData = await fetchData('/top-scrap-contributors?top_n=8');
+            if (scrapContributorsData.length > 0) {
+                createChart('scrapContributorsChart', {
+                    type: 'bar',
+                    data: {
+                        labels: scrapContributorsData.map(d => d.PRODUCT_TYPE || 'Unknown'),
+                        datasets: [{
+                            label: 'Total Scrap Qty',
+                            data: scrapContributorsData.map(d => d.total_scrap_qty || 0),
+                            backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                            borderColor: '#e74c3c',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            
+            // Scrap Factor Analysis
+            const scrapFactorData = await fetchData('/scrap-factor');
+            if (scrapFactorData.length > 0) {
+                createChart('scrapFactorChart', {
+                    type: 'bar',
+                    data: {
+                        labels: scrapFactorData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Avg Scrap Factor',
+                            data: scrapFactorData.map(d => d.avg_scrap_factor || 0),
+                            backgroundColor: 'rgba(243, 156, 18, 0.8)',
+                            borderColor: '#f39c12',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            
+            // Delay Reasons
+            const delayReasonsData = await fetchData('/delay-reasons');
+            displayTable('delayReasonsData', delayReasonsData, [
+                'WIP_PERIOD_NAME', 'DELAY_REASON', 'count'
+            ]);
+        }
+        
+        // Load Cost & Efficiency Data
+        async function loadCostData() {
+            // Cost Overrun Frequency
+            const costOverrunData = await fetchData('/cost-overrun-frequency');
+            if (costOverrunData.length > 0) {
+                createChart('costOverrunChart', {
+                    type: 'bar',
+                    data: {
+                        labels: costOverrunData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Overrun Count',
+                            data: costOverrunData.map(d => d.overrun_count || 0),
+                            backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                            borderColor: '#e74c3c',
+                            borderWidth: 2
+                        }, {
+                            label: 'Total Batches',
+                            data: costOverrunData.map(d => d.total_batches || 0),
+                            backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                            borderColor: '#3498db',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+            
+            // Cost Variance by Product
+            const costVarianceData = await fetchData('/cost-variance-by-product');
+            displayTable('costVarianceData', costVarianceData, [
+                'WIP_PERIOD_NAME', 'PRODUCT_TYPE', 'total_cost_variance'
+            ]);
+            
+            // Cost Efficiency Index
+            const efficiencyData = await fetchData('/cost-efficiency-index');
+            if (efficiencyData.length > 0) {
+                createChart('efficiencyChart', {
+                    type: 'line',
+                    data: {
+                        labels: efficiencyData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Cost Efficiency Index',
+                            data: efficiencyData.map(d => d.avg_cost_efficiency_index || 0),
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            
+            // Overall Cost Variance
+            const overallCostData = await fetchData('/cost-variance');
+            if (overallCostData.length > 0) {
+                createChart('overallCostChart', {
+                    type: 'bar',
+                    data: {
+                        labels: overallCostData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Standard Cost',
+                            data: overallCostData.map(d => d.total_standard_cost || 0),
+                            backgroundColor: 'rgba(52, 152, 219, 0.8)'
+                        }, {
+                            label: 'Actual Cost',
+                            data: overallCostData.map(d => d.total_actual_cost || 0),
+                            backgroundColor: 'rgba(231, 76, 60, 0.8)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
+        
+        // Load Planning Accuracy Data
+        async function loadPlanningData() {
+            // Forecast Accuracy
+            const forecastData = await fetchData('/forecast-accuracy');
+            if (forecastData.length > 0) {
+                createChart('forecastChart', {
+                    type: 'line',
+                    data: {
+                        labels: forecastData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'MAPE (Mean Absolute Percentage Error)',
+                            data: forecastData.map(d => d.mape || 0),
+                            borderColor: '#9b59b6',
+                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'MAPE (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Variance Hotspots
+            const hotspotData = await fetchData('/variance-hotspots?top_n=15');
+            displayTable('hotspotData', hotspotData, [
+                'WIP_PERIOD_NAME', 'PRODUCT_TYPE', 'total_qty_variance'
+            ]);
+            
+            // Quantity Variance
+            const quantityVarianceData = await fetchData('/quantity-variance');
+            if (quantityVarianceData.length > 0) {
+                createChart('quantityVarianceChart', {
+                    type: 'bar',
+                    data: {
+                        labels: quantityVarianceData.map(d => d.WIP_PERIOD_NAME || 'Unknown'),
+                        datasets: [{
+                            label: 'Plan Qty',
+                            data: quantityVarianceData.map(d => d.total_plan_qty || 0),
+                            backgroundColor: 'rgba(52, 152, 219, 0.8)'
+                        }, {
+                            label: 'WIP Qty',
+                            data: quantityVarianceData.map(d => d.total_wip_qty || 0),
+                            backgroundColor: 'rgba(46, 204, 113, 0.8)'
+                        }, {
+                            label: 'Original Qty',
+                            data: quantityVarianceData.map(d => d.total_original_qty || 0),
+                            backgroundColor: 'rgba(155, 89, 182, 0.8)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+            
+            // Replacement Cost Impact
+            const replacementData = await fetchData('/replacement-cost-impact');
+            displayTable('replacementData', replacementData, [
+                'REASON', 'events', 'avg_cost_variance', 'avg_extra_cost'
+            ]);
+        }
+        
+        // Load Correlation Data
+        async function loadCorrelationData() {
+            const correlations = [
+                { endpoint: '/scrap-delay-correlation', title: 'Scrap vs Delay', key: 'pearson_r' },
+                { endpoint: '/cost-delay-correlation', title: 'Cost vs Delay', key: 'cost_delay_correlation' },
+                { endpoint: '/planqty-scrap-correlation', title: 'Plan Qty vs Scrap', key: 'planqty_scrap_correlation' },
+                { endpoint: '/scrapfactor-costvariance-correlation', title: 'Scrap vs Cost Variance', key: 'scrapfactor_costvariance_correlation' },
+                { endpoint: '/delay-costvariance-correlation', title: 'Delay vs Cost Variance', key: 'delay_costvariance_correlation' },
+                { endpoint: '/throughput-scrap-correlation', title: 'Throughput vs Scrap', key: 'throughput_scrap_correlation' }
+            ];
+            
+            const correlationGrid = document.getElementById('correlationGrid');
+            correlationGrid.innerHTML = '';
+            
+            for (const corr of correlations) {
+                try {
+                    const data = await fetchData(corr.endpoint);
+                    let value = null;
+                    
+                    if (Array.isArray(data) && data.length > 0) {
+                        // Handle array response (like scrap-delay-correlation)
+                        const overallData = data.find(d => d.scope === 'overall');
+                        value = overallData ? overallData[corr.key] : data[0][corr.key];
+                    } else if (data && typeof data === 'object') {
+                        // Handle object response
+                        value = data[corr.key];
+                    }
+                    
+                    const correlationCard = document.createElement('div');
+                    correlationCard.className = 'correlation-card';
+                    
+                    let strengthClass = 'correlation-weak';
+                    let strength = 'Weak';
+                    if (value !== null && !isNaN(value)) {
+                        const absValue = Math.abs(value);
+                        if (absValue >= 0.7) {
+                            strengthClass = 'correlation-strong';
+                            strength = 'Strong';
+                        } else if (absValue >= 0.4) {
+                            strengthClass = 'correlation-moderate';
+                            strength = 'Moderate';
+                        }
+                    }
+                    
+                    correlationCard.innerHTML = `
+                        <h4>${corr.title}</h4>
+                        <div class="correlation-value ${strengthClass}">
+                            ${value !== null && !isNaN(value) ? value.toFixed(3) : 'N/A'}
+                        </div>
+                        <div class="correlation-strength">${strength} Correlation</div>
+                    `;
+                    
+                    correlationGrid.appendChild(correlationCard);
+                } catch (error) {
+                    console.error(`Error loading ${corr.endpoint}:`, error);
+                }
+            }
+        }
+        
+        // Load Operations Data
+        async function loadOperationsData() {
+            // Raw Material Changes
+            const materialChangesData = await fetchData('/raw-material-changes');
+            displayTable('materialChangesData', materialChangesData, [
+                'WIP_PERIOD_NAME', 'WIP_BATCH_STATUS', 'WIP_LOT_NUMBER', 'total_qty_change'
+            ]);
+            
+            // Replacement Identification
+            const replacementIdData = await fetchData('/replacement-identification');
+            if (replacementIdData.length > 0) {
+                createChart('replacementChart', {
+                    type: 'pie',
+                    data: {
+                        labels: replacementIdData.map(d => d.REASON || 'Unknown'),
+                        datasets: [{
+                            data: replacementIdData.map(d => d.count || 0),
+                            backgroundColor: [
+                                '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                                '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+                                '#ffecd2', '#fcb69f', '#a8edea', '#fed6e3'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Helper function to create charts
+        function createChart(canvasId, config) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+            
+            // Create new chart
+            charts[canvasId] = new Chart(ctx, config);
+        }
+        
+        // Helper function to display data as table
+        function displayTable(containerId, data, columns) {
+            const container = document.getElementById(containerId);
+            if (!container || !data || data.length === 0) {
+                container.innerHTML = '<div class="error">No data available</div>';
+                return;
+            }
+            
+            // Handle error responses
+            if (data[0] && data[0].error) {
+                container.innerHTML = `<div class="error">${data[0].error}</div>`;
+                return;
+            }
+            
+            let html = '<table class="data-table"><thead><tr>';
+            
+            // Use provided columns or extract from data
+            const tableColumns = columns || Object.keys(data[0]);
+            
+            tableColumns.forEach(col => {
+                html += `<th>${col.replace(/_/g, ' ').toUpperCase()}</th>`;
+            });
+            
+            html += '</tr></thead><tbody>';
+            
+            data.slice(0, 100).forEach(row => { // Limit to 100 rows for performance
+                html += '<tr>';
+                tableColumns.forEach(col => {
+                    let value = row[col];
+                    if (typeof value === 'number') {
+                        value = value.toFixed(2);
+                    } else if (value === null || value === undefined) {
+                        value = 'N/A';
+                    }
+                    html += `<td>${value}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            if (data.length > 100) {
+                html += `<div style="text-align: center; padding: 10px; color: #666;">
+                    Showing first 100 of ${data.length} records
+                </div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            testConnection();
+            setTimeout(loadAllData, 1000); // Auto-load data after 1 second
+        });
+        
+        // Handle API URL changes
+        document.getElementById('apiUrl').addEventListener('change', function() {
+            apiBaseUrl = this.value.trim();
+            testConnection();
+        });
+        
+        // Add keyboard shortcut for loading data
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                loadAllData();
+            }
+        });
+        
+        // Auto-refresh data every 5 minutes
+        setInterval(() => {
+            if (document.getElementById('connectionStatus').classList.contains('status-online')) {
+                loadAllData();
+            }
+        }, 300000); // 5 minutes
+        
+        // Add responsive chart resizing
+        window.addEventListener('resize', function() {
+            Object.values(charts).forEach(chart => {
+                if (chart) {
+                    chart.resize();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

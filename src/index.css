@@ -1,0 +1,268 @@
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-sans/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 211 65% 19%;
+    --card: 0 0% 100%;
+    --card-foreground: 211 65% 19%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 211 65% 19%;
+    --primary: 211 65% 19%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 211 20% 95%;
+    --secondary-foreground: 211 65% 19%;
+    --muted: 211 20% 95%;
+    --muted-foreground: 211 30% 46%;
+    --accent: 211 20% 92%;
+    --accent-foreground: 211 65% 19%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 211 20% 88%;
+    --input: 211 20% 90%;
+    --ring: 211 65% 19%;
+    --radius: 0.5rem;
+    
+    /* Chart color variables */
+    --chart-1: 211 65% 19%;
+    --chart-2: 211 65% 30%;
+    --chart-3: 211 65% 40%;
+    --chart-4: 211 65% 50%;
+    --chart-5: 211 65% 60%;
+    
+    /* App theme colors */
+    --app-blue: 211 65% 19%;            /* #193762 */
+    --app-blue-light: 211 20% 95%;      /* Light blue variant */
+    --app-blue-medium: 211 30% 46%;     /* Medium blue variant */
+    --app-background: 0 0% 100%;        /* #FFFFFF */
+    --app-card-bg: 0 0% 100%;           /* #FFFFFF */
+    --app-text: 211 65% 19%;            /* #193762 */
+    --app-text-secondary: 211 30% 46%;  /* Muted blue text */
+    --app-border: 211 20% 88%;          /* Light blue border */
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    
+    /* Chart color variables for dark mode */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+  
+  .light-mode {
+    --background: var(--app-background);
+    --foreground: var(--app-text);
+    --card: var(--app-card-bg);
+    --card-foreground: var(--app-text);
+    --primary: var(--app-blue);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--app-blue-light);
+    --secondary-foreground: var(--app-blue);
+    --muted: var(--app-blue-light);
+    --muted-foreground: var(--app-text-secondary);
+    --accent: var(--app-blue-light);
+    --accent-foreground: var(--app-blue);
+    --border: var(--app-border);
+    --input: var(--app-border);
+    --ring: var(--app-blue);
+  }
+
+  html {
+    font-family: 'Geist Sans', system-ui, sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* App-specific typography for light mode */
+  .light-mode h1 {
+    @apply text-[#193762] font-bold;
+  }
+  
+  .light-mode h2 {
+    @apply font-semibold text-[#193762];
+  }
+  
+  .light-mode p {
+    @apply text-slate-600;
+  }
+  
+  .light-mode button.primary {
+    @apply bg-[#193762] text-white hover:bg-[#0f2644] transition-colors;
+  }
+  
+  .light-mode button.secondary {
+    @apply bg-white text-[#193762] border border-[#193762] hover:bg-[#193762] hover:text-white transition-colors;
+  }
+  
+  .light-mode .card {
+    @apply bg-white border border-gray-200 shadow-sm;
+  }
+}
+
+@layer utilities {
+  /* Custom animations for chatbot */
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-typing {
+    animation: typing 1.5s steps(40, end), blink-caret 0.75s step-end infinite;
+  }
+  
+  .animate-stream-in {
+    animation: streamIn 0.3s ease-out forwards;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blink-caret {
+  from, to {
+    border-color: transparent;
+  }
+  50% {
+    border-color: currentColor;
+  }
+}
+
+@keyframes streamIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.4);
+  }
+  to {
+    box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.8);
+  }
+}
+
+/* Enhanced scrollbar styling */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(113, 113, 122, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.8);
+}
+
+/* Chat message animations */
+.message-appear {
+  animation: messageAppear 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Floating animation for chat toggle */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Gradient animation for buttons */
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
